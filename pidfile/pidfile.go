@@ -48,3 +48,20 @@ func (file PIDFile) Remove() error {
 	}
 	return nil
 }
+
+// ReadPIDFile 读取pid文件
+func ReadPIDFile(pidfile string) (pid int, err error) {
+	f, err := os.Open(pidfile)
+	if err != nil {
+		return
+	}
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return
+	}
+
+	pid64, err := strconv.ParseInt(string(b), 10, 64)
+	pid = int(pid64)
+	return
+}

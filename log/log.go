@@ -1,95 +1,101 @@
 package log
 
-import (
-	"fmt"
-	"log"
-	"strings"
-)
-
-var DebugEnabled = false
-
+// 日志输出级别
 const (
-	LevelEmergency = "EMERGENCY"
-	LevelAlert     = "ALERT"
-	LevelCritical  = "CRITICAL"
-	LevelError     = "ERROR"
-	LevelWarning   = "WARNING"
-	LevelNotice    = "NOTICE"
-	LevelInfo      = "INFO"
-	LevelDebug     = "DEBUG"
+	LevelEmergency = 600
+	LevelAlert     = 550
+	LevelCritical  = 500
+	LevelError     = 400
+	LevelWarning   = 300
+	LevelNotice    = 250
+	LevelInfo      = 200
+	LevelDebug     = 100
 )
 
-func output(level string, format string, v ...interface{}) {
-	message := fmt.Sprintf(fmt.Sprintf("[%s] %s", strings.ToUpper(level), format), v...)
-	log.Print(strings.Trim(strings.Replace(message, "\n", "\n	", -1), "\n	"))
-}
-
-func Emergency(v ...interface{}) {
-	output(LevelEmergency, fmt.Sprint(v...))
-}
-
-func Alert(v ...interface{}) {
-	output(LevelAlert, fmt.Sprint(v...))
-}
-
-func Critical(v ...interface{}) {
-	output(LevelCritical, fmt.Sprint(v...))
-}
-
-func Error(v ...interface{}) {
-	output(LevelError, fmt.Sprint(v...))
-}
-
-func Warning(v ...interface{}) {
-	output(LevelWarning, fmt.Sprint(v...))
-}
-
-func Notice(v ...interface{}) {
-	output(LevelNotice, fmt.Sprint(v...))
-}
-
-func Info(v ...interface{}) {
-	output(LevelInfo, fmt.Sprint(v...))
-}
-
-func Debug(v ...interface{}) {
-	if !DebugEnabled {
-		return
+// GetLevelName 获取日志级别名称
+func GetLevelName(level int) string {
+	switch level {
+	case LevelEmergency:
+		return "EMERGENCY"
+	case LevelAlert:
+		return "ALERT"
+	case LevelCritical:
+		return "CRITICAL"
+	case LevelError:
+		return "ERROR"
+	case LevelWarning:
+		return "WARNING"
+	case LevelNotice:
+		return "NOTICE"
+	case LevelInfo:
+		return "INFO"
+	case LevelDebug:
+		return "DEBUG"
 	}
-	output(LevelDebug, fmt.Sprint(v...))
+
+	return "UNKNOWN"
 }
 
-func Emergencyf(format string, v ...interface{}) {
-	output(LevelEmergency, format, v...)
+func Emergency(v ...interface{}) string {
+	return GetDefaultModule().Emergency(v...)
 }
 
-func Alertf(format string, v ...interface{}) {
-	output(LevelAlert, format, v...)
+func Alert(v ...interface{}) string {
+	return GetDefaultModule().Alert(v...)
 }
 
-func Criticalf(format string, v ...interface{}) {
-	output(LevelCritical, format, v...)
+func Critical(v ...interface{}) string {
+	return GetDefaultModule().Critical(v...)
 }
 
-func Errorf(format string, v ...interface{}) {
-	output(LevelError, format, v...)
+func Error(v ...interface{}) string {
+	return GetDefaultModule().Error(v...)
 }
 
-func Warningf(format string, v ...interface{}) {
-	output(LevelWarning, format, v...)
+func Warning(v ...interface{}) string {
+	return GetDefaultModule().Warning(v...)
 }
 
-func Noticef(format string, v ...interface{}) {
-	output(LevelNotice, format, v...)
+func Notice(v ...interface{}) string {
+	return GetDefaultModule().Notice(v...)
 }
 
-func Infof(format string, v ...interface{}) {
-	output(LevelInfo, format, v...)
+func Info(v ...interface{}) string {
+	return GetDefaultModule().Info(v...)
 }
 
-func Debugf(format string, v ...interface{}) {
-	if !DebugEnabled {
-		return
-	}
-	output(LevelDebug, format, v...)
+func Debug(v ...interface{}) string {
+	return GetDefaultModule().Debug(v...)
+}
+
+func Emergencyf(format string, v ...interface{}) string {
+	return GetDefaultModule().Emergencyf(format, v...)
+}
+
+func Alertf(format string, v ...interface{}) string {
+	return GetDefaultModule().Alertf(format, v...)
+}
+
+func Criticalf(format string, v ...interface{}) string {
+	return GetDefaultModule().Criticalf(format, v...)
+}
+
+func Errorf(format string, v ...interface{}) string {
+	return GetDefaultModule().Errorf(format, v...)
+}
+
+func Warningf(format string, v ...interface{}) string {
+	return GetDefaultModule().Warningf(format, v...)
+}
+
+func Noticef(format string, v ...interface{}) string {
+	return GetDefaultModule().Noticef(format, v...)
+}
+
+func Infof(format string, v ...interface{}) string {
+	return GetDefaultModule().Infof(format, v...)
+}
+
+func Debugf(format string, v ...interface{}) string {
+	return GetDefaultModule().Debugf(format, v...)
 }
