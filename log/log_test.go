@@ -5,6 +5,8 @@ import (
 )
 
 func TestModule(t *testing.T) {
+	// SetDefaultLevel(LevelCritical)
+
 	GetDefaultModule().SetLevel(LevelDebug)
 	Debug("xxxx")
 

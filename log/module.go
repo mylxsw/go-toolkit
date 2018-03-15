@@ -14,11 +14,34 @@ type Logger struct {
 }
 
 var loggers = make(map[string]*Logger)
-var defaultLogLevel = LevelDebug
+
+// defaultConfig 默认配置对象
+type defaultConfig struct {
+	logLevel  int
+	formatter Formatter
+	writer    Writer
+}
+
+// 默认配置信息
+var defaultLogConfig = defaultConfig{
+	logLevel:  LevelDebug,
+	formatter: &DefaultFormatter{},
+	writer:    &DefaultWriter{},
+}
 
 // SetDefaultLevel 设置全局默认日志输出级别
 func SetDefaultLevel(level int) {
-	defaultLogLevel = level
+	defaultLogConfig.logLevel = level
+}
+
+// SetDefaultFormatter 设置全局默认的日志输出格式化器
+func SetDefaultFormatter(formatter Formatter) {
+	defaultLogConfig.formatter = formatter
+}
+
+// SetDefaultWriter 设置全局默认的日志输出器
+func SetDefaultWriter(writer Writer) {
+	defaultLogConfig.writer = writer
 }
 
 // Module 获取指定模块的日志输出对象
@@ -29,7 +52,7 @@ func Module(moduleName string) *Logger {
 
 	logger := &Logger{
 		moduleName: moduleName,
-		level:      defaultLogLevel,
+		level:      defaultLogConfig.logLevel,
 	}
 
 	loggers[moduleName] = logger
@@ -68,7 +91,7 @@ func (module *Logger) SetFormatter(formatter Formatter) *Logger {
 func (module *Logger) getFormatter() Formatter {
 
 	if module.formatter == nil {
-		module.SetFormatter(&DefaultFormatter{})
+		module.SetFormatter(defaultLogConfig.formatter)
 	}
 
 	return module.formatter
@@ -82,7 +105,7 @@ func (module *Logger) SetWriter(writer Writer) *Logger {
 
 func (module *Logger) getWriter() Writer {
 	if module.writer == nil {
-		module.SetWriter(&DefaultWriter{})
+		module.SetWriter(defaultLogConfig.writer)
 	}
 
 	return module.writer
