@@ -14,6 +14,12 @@ type Logger struct {
 }
 
 var loggers = make(map[string]*Logger)
+var defaultLogLevel = LevelDebug
+
+// SetDefaultLevel 设置全局默认日志输出级别
+func SetDefaultLevel(level int) {
+	defaultLogLevel = level
+}
 
 // Module 获取指定模块的日志输出对象
 func Module(moduleName string) *Logger {
@@ -23,7 +29,7 @@ func Module(moduleName string) *Logger {
 
 	logger := &Logger{
 		moduleName: moduleName,
-		level:      LevelDebug,
+		level:      defaultLogLevel,
 	}
 
 	loggers[moduleName] = logger
