@@ -31,9 +31,12 @@ func Module(moduleName string) *Logger {
 	return logger
 }
 
-func (module *Logger) output(level int, v ...interface{}) string {
-	message := module.getFormatter().Format(time.Now(), module.moduleName, level, v...)
-	module.getWriter().Write(message)
+func (module *Logger) output(level int, context map[string]interface{}, v ...interface{}) string {
+	message := module.getFormatter().Format(time.Now(), module.moduleName, level, context, v...)
+	// 低于设定日志级别的日志不会输出
+	if level >= module.level {
+		module.getWriter().Write(message)
+	}
 
 	return message
 }
@@ -79,44 +82,52 @@ func (module *Logger) getWriter() Writer {
 	return module.writer
 }
 
+// WithContext 带有上下文信息的日志输出
+func (module *Logger) WithContext(context map[string]interface{}) *ContextLogger {
+	return &ContextLogger{
+		logger:  module,
+		context: context,
+	}
+}
+
 // Emergency 记录emergency日志
 func (module *Logger) Emergency(v ...interface{}) string {
-	return module.output(LevelEmergency, v...)
+	return module.output(LevelEmergency, nil, v...)
 }
 
 // Alert 记录Alert日志
 func (module *Logger) Alert(v ...interface{}) string {
-	return module.output(LevelAlert, v...)
+	return module.output(LevelAlert, nil, v...)
 }
 
 // Critical 记录Critical日志
 func (module *Logger) Critical(v ...interface{}) string {
-	return module.output(LevelCritical, v...)
+	return module.output(LevelCritical, nil, v...)
 }
 
 // Error 记录Error日志
 func (module *Logger) Error(v ...interface{}) string {
-	return module.output(LevelError, v...)
+	return module.output(LevelError, nil, v...)
 }
 
 // Warning 记录Warning日志
 func (module *Logger) Warning(v ...interface{}) string {
-	return module.output(LevelWarning, v...)
+	return module.output(LevelWarning, nil, v...)
 }
 
 // Notice 记录Notice日志
 func (module *Logger) Notice(v ...interface{}) string {
-	return module.output(LevelNotice, v...)
+	return module.output(LevelNotice, nil, v...)
 }
 
 // Info 记录Info日志
 func (module *Logger) Info(v ...interface{}) string {
-	return module.output(LevelInfo, v...)
+	return module.output(LevelInfo, nil, v...)
 }
 
 // Debug 记录Debug日志
 func (module *Logger) Debug(v ...interface{}) string {
-	return module.output(LevelDebug, v...)
+	return module.output(LevelDebug, nil, v...)
 }
 
 // Emergencyf 记录emergency日志

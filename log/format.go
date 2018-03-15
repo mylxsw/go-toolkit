@@ -10,15 +10,15 @@ import (
 // Formatter 日志格式化接口
 type Formatter interface {
 	// Format 日志格式化
-	Format(currentTime time.Time, moduleName string, level int, v ...interface{}) string
+	Format(currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string
 }
 
 // DefaultFormatter 默认日志格式化
 type DefaultFormatter struct{}
 
 // Format 日志格式化
-func (formatter DefaultFormatter) Format(currentTime time.Time, moduleName string, level int, v ...interface{}) string {
-	message := fmt.Sprintf("[%s] %s [%s] %s", currentTime.Format("2006-01-02 15:04:05"), moduleName, GetLevelName(level), fmt.Sprint(v...))
+func (formatter DefaultFormatter) Format(currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
+	message := fmt.Sprintf("[%s] %s.%s: %s %s", currentTime.Format("2006-01-02 15:04:05"), moduleName, GetLevelName(level), fmt.Sprint(v...), formatContext(context))
 
 	// 将多行内容增加前缀tab，与第一行内容分开
 	return strings.Trim(strings.Replace(message, "\n", "\n	", -1), "\n	")
@@ -28,25 +28,39 @@ func (formatter DefaultFormatter) Format(currentTime time.Time, moduleName strin
 type JSONFormatter struct{}
 
 type jsonOutput struct {
-	ModuleName string        `json:"module"`
-	LevelName  string        `json:"level_name"`
-	Level      int           `json:"level"`
-	Context    []interface{} `json:"context"`
-	Message    string        `json:"message"`
-	DateTime   string        `json:"datetime"`
+	ModuleName string                 `json:"module"`
+	LevelName  string                 `json:"level_name"`
+	Level      int                    `json:"level"`
+	Context    map[string]interface{} `json:"context"`
+	Message    string                 `json:"message"`
+	DateTime   string                 `json:"datetime"`
 }
 
 // Format 日志格式化
-func (formatter JSONFormatter) Format(currentTime time.Time, moduleName string, level int, v ...interface{}) string {
+func (formatter JSONFormatter) Format(currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
 	datetime := currentTime.Format("2006-01-02 15:04:05")
+
+	if context == nil {
+		context = make(map[string]interface{})
+	}
+
 	res, _ := json.Marshal(jsonOutput{
 		DateTime:   datetime,
-		Message:    "",
+		Message:    fmt.Sprint(v...),
 		Level:      level,
 		ModuleName: moduleName,
 		LevelName:  GetLevelName(level),
-		Context:    v,
+		Context:    context,
 	})
 
 	return fmt.Sprintf("[%s] %s", datetime, string(res))
+}
+
+func formatContext(context map[string]interface{}) string {
+	if context == nil {
+		context = make(map[string]interface{})
+	}
+
+	contextJSON, _ := json.Marshal(context)
+	return string(contextJSON)
 }
