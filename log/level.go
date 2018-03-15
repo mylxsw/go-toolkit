@@ -1,5 +1,7 @@
 package log
 
+import "strings"
+
 // 日志输出级别
 const (
 	LevelEmergency = 600
@@ -34,4 +36,28 @@ func GetLevelName(level int) string {
 	}
 
 	return "UNKNOWN"
+}
+
+// GetLevelByName 使用名称获取Level真实的数值
+func GetLevelByName(levelName string) int {
+	switch strings.ToUpper(levelName) {
+	case "EMERGENCY":
+		return LevelEmergency
+	case "ALERT":
+		return LevelAlert
+	case "CRITICAL":
+		return LevelCritical
+	case "ERROR":
+		return LevelError
+	case "WARNING":
+		return LevelWarning
+	case "NOTICE":
+		return LevelNotice
+	case "INFO":
+		return LevelInfo
+	case "DEBUG":
+		return LevelDebug
+	}
+
+	return 0
 }

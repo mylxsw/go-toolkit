@@ -1,16 +1,14 @@
-package jwt_test
+package jwt
 
 import (
 	"testing"
-
-	"git.yunsom.cn/golang/broadcast/utils/jwt"
 )
 
 var key = "123456"
 
 func TestCreateToken(t *testing.T) {
-	token := jwt.New(key)
-	tokenString := token.CreateToken(jwt.Claims{
+	token := New(key)
+	tokenString := token.CreateToken(Claims{
 		"uid": 12344,
 	}, -600)
 
@@ -25,9 +23,9 @@ func TestParseToken(t *testing.T) {
 
 	{
 		// 检查token可用
-		token := jwt.New(key)
+		token := New(key)
 
-		claims, err := token.ParseToken(token.CreateToken(jwt.Claims{
+		claims, err := token.ParseToken(token.CreateToken(Claims{
 			"uid": uid,
 		}, 500))
 		if err != nil {
@@ -43,12 +41,12 @@ func TestParseToken(t *testing.T) {
 
 	// 1. key错误
 	{
-		token := jwt.New(key)
-		tokenStr := token.CreateToken(jwt.Claims{
+		token := New(key)
+		tokenStr := token.CreateToken(Claims{
 			"uid": uid,
 		}, 500)
 
-		token2 := jwt.New("aabbcc")
+		token2 := New("aabbcc")
 		_, err := token2.ParseToken(tokenStr)
 		if err == nil || err.Error() != "signature is invalid" {
 			t.Errorf("Check invalid token failed")
@@ -57,8 +55,8 @@ func TestParseToken(t *testing.T) {
 
 	// 2. token 过期
 	{
-		token := jwt.New(key)
-		tokenStr := token.CreateToken(jwt.Claims{
+		token := New(key)
+		tokenStr := token.CreateToken(Claims{
 			"uid": uid,
 		}, -5000)
 
