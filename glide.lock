@@ -1,10 +1,16 @@
-hash: 61a7eed79d2504c299d0d5c312165e1feebdb3aa1023f937282310b9eb221660
-updated: 2018-03-15T15:12:40.30469+08:00
+hash: a77531c8e91e234c0e991ca0885d7ce0fd7d10b7b0667962709d4c474404baa7
+updated: 2018-03-26T11:05:08.971657+08:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: 06ea1031745cb8b3dab3f6a236daf2b0aa468b7e
+- name: github.com/docker/distribution
+  version: 48294d928ced5dd9b378f7fd7c6f5da3ff3f2c89
+  subpackages:
+  - uuid
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
   version: 53c1911da2b537f792e7cafcb446b05ffe33b996
+- name: github.com/jeffail/tunny
+  version: 59cfa8fcb19f5acba8db07a0dd3cb2fa7edbc228
 testImports: []
