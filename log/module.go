@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -14,6 +15,7 @@ type Logger struct {
 }
 
 var loggers = make(map[string]*Logger)
+var moduleLock sync.Mutex
 
 // defaultConfig 默认配置对象
 type defaultConfig struct {
@@ -46,6 +48,9 @@ func SetDefaultWriter(writer Writer) {
 
 // Module 获取指定模块的日志输出对象
 func Module(moduleName string) *Logger {
+	moduleLock.Lock()
+	defer moduleLock.Unlock()
+
 	if logger, ok := loggers[moduleName]; ok {
 		return logger
 	}
