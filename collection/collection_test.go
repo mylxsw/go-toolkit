@@ -2,10 +2,70 @@ package collection
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 )
 
-func TestInvalidType(t *testing.T) {
+var testMapData = map[string]string{
+	"k1": "v1",
+	"k2": "v2",
+	"k3": "v3",
+	"":   "v4",
+	"k5": "",
+	"xx": "yy",
+}
+
+type Element struct {
+	ID   int
+	Name string
+}
+
+type Element2 struct {
+	ID   int
+	Name string
+	Age  int
+}
+
+func TestInvalidTypeForMap(t *testing.T) {
+	collection := MustNew(testMapData)
+
+	collectionWithoutEmpty := collection.Filter(func(value string) bool {
+		return value != ""
+	}).Filter(func(value string, key string) bool {
+		return key != ""
+	})
+
+	collectionWithoutEmpty.Each(func(value, key string) {
+		if value == "" || key == "" {
+			t.Errorf("test failed: %s=>%s", key, value)
+		}
+	})
+
+	if collectionWithoutEmpty.Size() != 4 || collection.Size() != 6 {
+		t.Error("test failed")
+	}
+
+	if _, ok := collectionWithoutEmpty.All().(map[interface{}]interface{}); !ok {
+		t.Error("test failed")
+	}
+
+	if _, ok := collection.All().([]string); ok {
+		t.Error("test failed")
+	}
+
+	if collection.IsEmpty() {
+		t.Error("test failed")
+	}
+
+	if !collection.Filter(func(value string) bool {
+		return false
+	}).IsEmpty() {
+		t.Error("test failed")
+	}
+}
+
+func TestInvalidTypeForArray(t *testing.T) {
 	_, err := New("hello")
 	if err == nil || err != ErrorInvalidDataType {
 		t.Errorf("test failed")
@@ -20,16 +80,11 @@ func TestInvalidType(t *testing.T) {
 		return item != ""
 	})
 
-	if collection.Count() != 4 {
+	if collection.Size() != 4 {
 		t.Error("test failed")
 	}
 
 	if fmt.Sprint(collection.All()) != "[hello world you are]" {
-		t.Errorf("test failed")
-	}
-
-	collection.Append("abc", "def")
-	if collection.ToString() != "[hello world you are abc def]" {
 		t.Errorf("test failed")
 	}
 
@@ -56,6 +111,42 @@ func TestInvalidType(t *testing.T) {
 	}
 }
 
+func TestStringMapCollection(t *testing.T) {
+	collection := MustNew(testMapData)
+	collection = collection.Filter(func(_, key string) bool {
+		return key != ""
+	}).Filter(func(value string) bool {
+		return value != ""
+	}).Map(func(value, key string) string {
+		return fmt.Sprintf("<%s(%s)>", value, key)
+	})
+
+	collection.Each(func(value, key string) {
+		if !regexp.MustCompile(fmt.Sprintf(`^<\w+\(%s\)>$`, key)).MatchString(value) {
+			t.Error("test failed")
+		}
+	})
+
+	joinedValue := collection.Reduce(func(carry string, value, key string) string {
+		if collection.MapIndex(key).(string) != value {
+			t.Error("test failed")
+		}
+		return carry + " " + collection.MapIndex(key).(string)
+	}, "value: ").(string)
+
+	if len(joinedValue) <= len("value: ") {
+		t.Error("test failed")
+	}
+
+	collection.Map(func(value string, key string) (string, string) {
+		return value, key + "(modified)"
+	}).Each(func(_, key string) {
+		if !strings.HasSuffix(key, "(modified)") {
+			t.Error("test failed")
+		}
+	})
+}
+
 func TestStringCollection(t *testing.T) {
 	collection := MustNew([]interface{}{"hello", "world", "", "you", "are"})
 	collection = collection.Filter(func(item string) bool {
@@ -77,23 +168,51 @@ func TestStringCollection(t *testing.T) {
 	}
 }
 
-func TestStructCollection(t *testing.T) {
-	type Element struct {
-		ID   int
-		Name string
+func TestComplexMapCollection(t *testing.T) {
+	elements := map[string]Element{
+		"one":   {ID: 1, Name: "hello"},
+		"two":   {ID: 2, Name: "world"},
+		"three": {ID: 3, Name: ""},
+		"four":  {ID: 4, Name: "Tom"},
 	}
 
-	type Element2 struct {
-		ID   int
-		Name string
-		Age  int
+	collection := MustNew(elements)
+	collection = collection.Filter(func(value Element, key string) bool {
+		return value.Name != ""
+	}).Map(func(value Element) Element2 {
+		return Element2{
+			ID:   value.ID,
+			Name: value.Name,
+			Age:  value.ID * 2,
+		}
+	})
+
+	if collection.Size() != 3 {
+		t.Errorf("test failed")
 	}
+
+	if !collection.MapHasIndex("one") {
+		t.Error("test failed")
+	}
+
+	if collection.MapHasIndex("three") {
+		t.Error("test failed")
+	}
+
+	collection.Each(func(value Element2, key string) {
+		if key == "" {
+			t.Error("test failed")
+		}
+	})
+}
+
+func TestComplexCollection(t *testing.T) {
 
 	elements := []Element{
-		Element{ID: 1, Name: "hello"},
-		Element{ID: 2, Name: "world"},
-		Element{ID: 3, Name: ""},
-		Element{ID: 4, Name: "Tom"},
+		{ID: 1, Name: "hello"},
+		{ID: 2, Name: "world"},
+		{ID: 3, Name: ""},
+		{ID: 4, Name: "Tom"},
 	}
 
 	collection := MustNew(elements)

@@ -11,28 +11,52 @@ var (
 	ErrorInvalidDataType = errors.New("Invalid data type")
 )
 
+// DataType is collection data type
+type DataType int8
+
+const (
+	// DataTypeMap represent the collection is a map collection
+	DataTypeMap DataType = iota
+	// DataTypeArrayOrSlice represent the collection is a array or slice collection
+	DataTypeArrayOrSlice
+)
+
 // Collection is a data collection
 type Collection struct {
-	data     []interface{}
-	dataType reflect.Type
+	dataArray []interface{}
+	dataMap   map[interface{}]interface{}
+	dataType  reflect.Type
 }
 
 // New create a new collection from data
 func New(data interface{}) (*Collection, error) {
-	dataKind := reflect.TypeOf(data).Kind()
-	if dataKind != reflect.Array && dataKind != reflect.Slice {
+	collection := Collection{
+		dataType: reflect.TypeOf(data),
+	}
+
+	dataKind := collection.dataType.Kind()
+	if dataKind != reflect.Array && dataKind != reflect.Slice && dataKind != reflect.Map {
 		return nil, ErrorInvalidDataType
 	}
 
 	dataValue := reflect.ValueOf(data)
-	dataArray := make([]interface{}, dataValue.Len())
-	for i := 0; i < dataValue.Len(); i++ {
-		dataArray[i] = dataValue.Index(i).Interface()
+	if dataKind == reflect.Map {
+		dataMap := make(map[interface{}]interface{}, dataValue.Len())
+		for _, key := range dataValue.MapKeys() {
+			dataMap[key.Interface()] = dataValue.MapIndex(key).Interface()
+		}
+
+		collection.dataMap = dataMap
+	} else {
+		dataArray := make([]interface{}, dataValue.Len())
+		for i := 0; i < dataValue.Len(); i++ {
+			dataArray[i] = dataValue.Index(i).Interface()
+		}
+
+		collection.dataArray = dataArray
 	}
 
-	return &Collection{
-		data: dataArray,
-	}, nil
+	return &collection, nil
 }
 
 // MustNew create a new collection from data with error suppress
@@ -47,20 +71,35 @@ func MustNew(data interface{}) *Collection {
 
 // Filter iterates over elements of collection, return all element meet the needs
 // filter(interface{}) bool
+// filter(interface{}, int) bool
 func (collection *Collection) Filter(filter interface{}) *Collection {
-	if !IsFunction(filter, 1, 1) {
+	if !IsFunction(filter, []int{1, 1}, []int{2, 1}) {
 		panic("invalid callback function")
 	}
 
 	filterValue := reflect.ValueOf(filter)
 	filterType := filterValue.Type()
+	argumentCount := filterType.NumIn()
+
+	// 返回值类型必须为bool
 	if filterType.Out(0).Kind() != reflect.Bool {
 		panic("return argument should be a boolean")
 	}
 
+	if collection.isMapType() {
+		results := make(map[interface{}]interface{})
+		for key, value := range collection.dataMap {
+			arguments := []reflect.Value{reflect.ValueOf(value), reflect.ValueOf(key)}
+			if filterValue.Call(arguments[0:argumentCount])[0].Interface().(bool) {
+				results[key] = value
+			}
+		}
+
+		return MustNew(results)
+	}
 	results := make([]interface{}, 0)
-	for _, item := range collection.data {
-		if filterValue.Call([]reflect.Value{reflect.ValueOf(item)})[0].Interface().(bool) {
+	for index, item := range collection.dataArray {
+		if filterValue.Call([]reflect.Value{reflect.ValueOf(item), reflect.ValueOf(index)}[0:argumentCount])[0].Interface().(bool) {
 			results = append(results, item)
 		}
 	}
@@ -68,18 +107,40 @@ func (collection *Collection) Filter(filter interface{}) *Collection {
 	return MustNew(results)
 }
 
-// Map manipulates an iteratee and transforms it to another type.
-// mapFunc(interface{}) interface{}
+// Map manipulates an iterate and transforms it to another type.
+// mapFunc(value interface{}) interface{}
+// mapFunc(value interface{}) (value interface{}, key interface{})
+// mapFunc(value interface{}, key interface{}) interface{}
+// mapFunc(value interface{}, key interface{}) (value interface{}, key interface{})
 func (collection *Collection) Map(mapFunc interface{}) *Collection {
-	if !IsFunction(mapFunc, 1, 1) {
+	if !IsFunction(mapFunc, []int{1, 1}, []int{2, 2}, []int{1, 2}, []int{2, 1}) {
 		panic("invalid callback function")
 	}
 
 	mapFuncValue := reflect.ValueOf(mapFunc)
+	mapFuncArgumentCount := mapFuncValue.Type().NumIn()
 
-	results := make([]interface{}, len(collection.data))
-	for index, item := range collection.data {
-		results[index] = mapFuncValue.Call([]reflect.Value{reflect.ValueOf(item)})[0].Interface()
+	if collection.isMapType() {
+		results := make(map[interface{}]interface{}, collection.Size())
+		for key, value := range collection.dataMap {
+			var values []reflect.Value
+			arguments := []reflect.Value{reflect.ValueOf(value), reflect.ValueOf(key)}
+
+			values = mapFuncValue.Call(arguments[0:mapFuncArgumentCount])
+
+			if len(values) == 1 {
+				results[key] = values[0].Interface()
+			} else {
+				results[values[1].Interface()] = values[0].Interface()
+			}
+		}
+
+		return MustNew(results)
+	}
+
+	results := make([]interface{}, len(collection.dataArray))
+	for index, item := range collection.dataArray {
+		results[index] = mapFuncValue.Call([]reflect.Value{reflect.ValueOf(item), reflect.ValueOf(index)}[0:mapFuncArgumentCount])[0].Interface()
 	}
 
 	return MustNew(results)
@@ -88,23 +149,35 @@ func (collection *Collection) Map(mapFunc interface{}) *Collection {
 // Reduce Iteratively reduce the array to a single value using a callback function
 // reduceFunc(carry interface{}, item interface{}) interface{}
 func (collection *Collection) Reduce(reduceFunc interface{}, initial interface{}) interface{} {
-	if !IsFunction(reduceFunc, 2, 1) {
+	if !IsFunction(reduceFunc, []int{2, 1}, []int{3, 1}) {
 		panic("invalid callback function")
 	}
 
 	reduceFuncValue := reflect.ValueOf(reduceFunc)
+	argumentsCount := reduceFuncValue.Type().NumIn()
 
 	previous := initial
-	for _, item := range collection.data {
-		previous = reduceFuncValue.Call([]reflect.Value{reflect.ValueOf(previous), reflect.ValueOf(item)})[0].Interface()
+	if collection.isMapType() {
+		for key, value := range collection.dataMap {
+			arguments := []reflect.Value{reflect.ValueOf(previous), reflect.ValueOf(value), reflect.ValueOf(key)}
+			previous = reduceFuncValue.Call(arguments[0:argumentsCount])[0].Interface()
+		}
+	} else {
+		for index, item := range collection.dataArray {
+			arguments := []reflect.Value{reflect.ValueOf(previous), reflect.ValueOf(item), reflect.ValueOf(index)}
+			previous = reduceFuncValue.Call(arguments[0:argumentsCount])[0].Interface()
+		}
 	}
 
 	return previous
 }
 
 // All Get all of the items in the collection.
-func (collection *Collection) All() []interface{} {
-	return collection.data
+func (collection *Collection) All() interface{} {
+	if collection.isMapType() {
+		return collection.dataMap
+	}
+	return collection.dataArray
 }
 
 // Each Execute a callback over each item.
@@ -120,48 +193,124 @@ func (collection *Collection) Each(eachFunc interface{}) {
 		panic("invalid callback function")
 	}
 
-	for index, item := range collection.data {
-		if argumentNums == 1 {
-			eachFuncValue.Call([]reflect.Value{reflect.ValueOf(item)})
-		} else {
-			eachFuncValue.Call([]reflect.Value{reflect.ValueOf(item), reflect.ValueOf(index)})
+	if collection.isMapType() {
+		for key, value := range collection.dataMap {
+			eachFuncValue.Call([]reflect.Value{reflect.ValueOf(value), reflect.ValueOf(key)}[0:argumentNums])
+		}
+	} else {
+		for index, item := range collection.dataArray {
+			eachFuncValue.Call([]reflect.Value{reflect.ValueOf(item), reflect.ValueOf(index)}[0:argumentNums])
 		}
 	}
 }
 
-// Append append new items to collection
-func (collection *Collection) Append(items ...interface{}) {
-	collection.data = append(collection.data, items...)
+// DataType return the data type
+func (collection *Collection) DataType() DataType {
+	if collection.isMapType() {
+		return DataTypeMap
+	}
+
+	return DataTypeArrayOrSlice
 }
 
 // IsEmpty Determine if the collection is empty or not.
 func (collection *Collection) IsEmpty() bool {
-	return len(collection.data) == 0
+	if collection.isMapType() {
+		return len(collection.dataMap) == 0
+	}
+	return len(collection.dataArray) == 0
 }
 
 // ToString print the data element
 func (collection *Collection) ToString() string {
-	return fmt.Sprint(collection.data)
+	if collection.isMapType() {
+		return fmt.Sprint(collection.dataMap)
+	}
+	return fmt.Sprint(collection.dataArray)
 }
 
-// Count count the number of items in the collection.
-func (collection *Collection) Count() int {
-	return len(collection.data)
+// Size count the number of items in the collection.
+func (collection *Collection) Size() int {
+	if collection.isMapType() {
+		return len(collection.dataMap)
+	}
+	return len(collection.dataArray)
+}
+
+// Index Get an item from the collection by index.
+func (collection *Collection) Index(index int) interface{} {
+	if collection.isMapType() {
+		return nil
+	}
+
+	if !collection.HasIndex(index) {
+		return nil
+	}
+
+	return reflect.ValueOf(collection.dataArray).Index(index).Interface()
+}
+
+// MapIndex get an item from the collection by key
+func (collection *Collection) MapIndex(key interface{}) interface{} {
+	if !collection.isMapType() {
+		return nil
+	}
+
+	value := reflect.ValueOf(collection.dataMap).MapIndex(reflect.ValueOf(key))
+	if value.IsValid() {
+		return value.Interface()
+	}
+
+	return nil
+}
+
+// MapHasIndex return whether the collection has a key
+func (collection *Collection) MapHasIndex(key interface{}) bool {
+	if !collection.isMapType() {
+		return false
+	}
+
+	return reflect.ValueOf(collection.dataMap).MapIndex(reflect.ValueOf(key)).IsValid()
+}
+
+// HasIndex return whether the collection has a index
+func (collection *Collection) HasIndex(index int) bool {
+	if collection.isMapType() {
+		return false
+	}
+
+	return index >= 0 && index < collection.Size()
+}
+
+func (collection *Collection) isMapType() bool {
+	return collection.dataType.Kind() == reflect.Map
 }
 
 // IsFunction returns if the argument is a function.
-func IsFunction(in interface{}, num ...int) bool {
+func IsFunction(in interface{}, argumentCheck ...[]int) bool {
 	funcType := reflect.TypeOf(in)
-
-	result := funcType.Kind() == reflect.Func
-
-	if len(num) >= 1 {
-		result = result && funcType.NumIn() == num[0]
+	if funcType.Kind() != reflect.Func {
+		return false
 	}
 
-	if len(num) == 2 {
-		result = result && funcType.NumOut() == num[1]
+	if len(argumentCheck) == 0 {
+		return true
 	}
 
-	return result
+	for _, check := range argumentCheck {
+		isValid := false
+		if len(check) >= 1 && check[0] >= 0 {
+			isValid = funcType.NumIn() == check[0]
+		}
+
+		if len(check) == 2 {
+			isValid = funcType.NumOut() == check[1]
+		}
+
+		if isValid {
+			return true
+		}
+	}
+
+	return false
 }
