@@ -20,6 +20,10 @@ func TestInvalidType(t *testing.T) {
 		return item != ""
 	})
 
+	if collection.Count() != 4 {
+		t.Error("test failed")
+	}
+
 	if fmt.Sprint(collection.All()) != "[hello world you are]" {
 		t.Errorf("test failed")
 	}

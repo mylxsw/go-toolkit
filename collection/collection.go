@@ -144,6 +144,11 @@ func (collection *Collection) ToString() string {
 	return fmt.Sprint(collection.data)
 }
 
+// Count count the number of items in the collection.
+func (collection *Collection) Count() int {
+	return len(collection.data)
+}
+
 // IsFunction returns if the argument is a function.
 func IsFunction(in interface{}, num ...int) bool {
 	funcType := reflect.TypeOf(in)
