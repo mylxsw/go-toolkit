@@ -1,5 +1,5 @@
-hash: a77531c8e91e234c0e991ca0885d7ce0fd7d10b7b0667962709d4c474404baa7
-updated: 2018-03-26T11:05:08.971657+08:00
+hash: b4dfa44d08082577297fe91403e109c60b9098c2f5c6361c9716e79e2452909f
+updated: 2018-06-22T18:06:49.936642+08:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: 06ea1031745cb8b3dab3f6a236daf2b0aa468b7e
@@ -7,10 +7,34 @@ imports:
   version: 48294d928ced5dd9b378f7fd7c6f5da3ff3f2c89
   subpackages:
   - uuid
+- name: github.com/fatih/color
+  version: 5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4
+- name: github.com/go-ole/go-ole
+  version: a1ec82a652ebc7e784d7df887cfb31061aeabbcc
+  subpackages:
+  - oleutil
 - name: github.com/gorilla/context
-  version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
-  version: 53c1911da2b537f792e7cafcb446b05ffe33b996
+  version: e3702bed27f0d39777b0b37b664b6280e8ef8fbf
 - name: github.com/jeffail/tunny
   version: 59cfa8fcb19f5acba8db07a0dd3cb2fa7edbc228
+- name: github.com/shirou/gopsutil
+  version: eeb1d38d69593f121e060d24d17f7b1f0936b203
+  subpackages:
+  - cpu
+  - host
+  - internal/common
+  - mem
+  - net
+  - process
+- name: github.com/shirou/w32
+  version: bb4de0191aa41b5507caa14b0650cdbddcd9280b
+- name: github.com/StackExchange/wmi
+  version: cdffdb33acae0e14efff2628f9bae377b597840e
+- name: golang.org/x/sys
+  version: 63fc586f45fe72d95d5240a5d5eb95e6503907d3
+  subpackages:
+  - unix
+  - windows
 testImports: []

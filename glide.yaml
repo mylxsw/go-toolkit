@@ -12,3 +12,7 @@ import:
   version: ^2.6.2
   subpackages:
   - uuid
+- package: github.com/shirou/gopsutil
+  version: ^2.18.5
+- package: github.com/fatih/color
+  version: ^1.7.0
