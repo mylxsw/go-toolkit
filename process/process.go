@@ -100,7 +100,7 @@ func (process *Process) start() <-chan *Process {
 		go process.consoleLog(LogTypeStderr, &stderrPipe)
 
 		if err := cmd.Start(); err != nil {
-			log.Module("process").Errorf("command %s start failed: %s", process.Name, err.Error())
+			log.Module("process").Errorf("process %s start failed: %s", process.Name, err.Error())
 			return
 		}
 
@@ -109,7 +109,7 @@ func (process *Process) start() <-chan *Process {
 		process.lock.Unlock()
 
 		if err := cmd.Wait(); err != nil {
-			log.Module("process").Errorf("command %s execute failed: %s", process.Name, err.Error())
+			log.Module("process").Warningf("process %s stopped with error : %s", process.Name, err.Error())
 		}
 	}()
 
