@@ -1,5 +1,5 @@
-hash: b4dfa44d08082577297fe91403e109c60b9098c2f5c6361c9716e79e2452909f
-updated: 2018-06-22T18:06:49.936642+08:00
+hash: 605499ffc2cdb0c947853230fa6f61bb675dd63f0c2bb94bf0acb3fc9a9458e5
+updated: 2018-06-24T11:46:08.873492+08:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: 06ea1031745cb8b3dab3f6a236daf2b0aa468b7e
@@ -19,6 +19,8 @@ imports:
   version: e3702bed27f0d39777b0b37b664b6280e8ef8fbf
 - name: github.com/jeffail/tunny
   version: 59cfa8fcb19f5acba8db07a0dd3cb2fa7edbc228
+- name: github.com/looplab/fsm
+  version: f980bdb68a8962823200eafe6c0aa99e917be0d7
 - name: github.com/shirou/gopsutil
   version: eeb1d38d69593f121e060d24d17f7b1f0936b203
   subpackages:
@@ -37,4 +39,8 @@ imports:
   subpackages:
   - unix
   - windows
-testImports: []
+testImports:
+- name: github.com/mattn/go-colorable
+  version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
+- name: github.com/mattn/go-isatty
+  version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c

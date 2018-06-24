@@ -10,33 +10,36 @@ type Program struct {
 	Name      string
 	Command   string
 	User      string
-	Group     string
 	ProcNum   int
 	processes []*Process
 }
 
-// prepare prepare a new program
-func (program *Program) prepare() {
-	snips := strings.Split(program.Command, " ")
-	command, args := snips[0], snips[1:]
-
-	program.processes = make([]*Process, program.ProcNum)
-	for i := 0; i < program.ProcNum; i++ {
-		program.processes[i] = NewProcess(Process{
-			Name:    fmt.Sprintf("%s-%d", program.Name, i),
-			Command: command,
-			Args:    args,
-			User:    program.User,
-			Group:   program.Group,
-		})
+func NewProgram(name, command, username string, procNum int) *Program {
+	return &Program{
+		Name:      name,
+		Command:   command,
+		User:      username,
+		ProcNum:   procNum,
+		processes: make([]*Process, 0),
 	}
 }
 
-func (program *Program) inspections() []Inspection {
-	inspections := make([]Inspection, len(program.processes))
-	for i, process := range program.processes {
-		inspections[i] = *NewInspection(process)
+func (program *Program) initProcesses(outputFunc OutputFunc) *Program {
+	snips := strings.Split(program.Command, " ")
+	command, args := snips[0], snips[1:]
+
+	for i := 0; i < program.ProcNum; i++ {
+		program.processes = append(program.processes, NewProcess(
+			fmt.Sprintf("%s-%d", program.Name, i),
+			command,
+			args,
+			program.User,
+		).setOutputFunc(outputFunc))
 	}
 
-	return inspections
+	return program
+}
+
+func (program *Program) Processes() []*Process {
+	return program.processes
 }

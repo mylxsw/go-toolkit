@@ -94,6 +94,8 @@ func (module *Logger) SetFormatter(formatter Formatter) *Logger {
 }
 
 func (module *Logger) getFormatter() Formatter {
+	moduleLock.Lock()
+	defer moduleLock.Unlock()
 
 	if module.formatter == nil {
 		module.SetFormatter(defaultLogConfig.formatter)
@@ -109,6 +111,9 @@ func (module *Logger) SetWriter(writer Writer) *Logger {
 }
 
 func (module *Logger) getWriter() Writer {
+	moduleLock.Lock()
+	defer moduleLock.Unlock()
+	
 	if module.writer == nil {
 		module.SetWriter(defaultLogConfig.writer)
 	}

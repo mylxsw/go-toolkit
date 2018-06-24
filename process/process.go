@@ -2,216 +2,197 @@ package process
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"os/user"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/mylxsw/go-toolkit/log"
-	process_util "github.com/shirou/gopsutil/process"
 )
+
+type OutputType string
+
+const (
+	LogTypeStderr = OutputType("stderr")
+	LogTypeStdout = OutputType("stdout")
+)
+
+type OutputFunc func(logType OutputType, line string, process *Process)
 
 // Process is a program instance
 type Process struct {
-	Name       string                // process name
-	Command    string                // the command to execute
-	Args       []string              // the arguments for command
-	User       string                // the user to run the command
-	Group      string                // the group to run the command
-	uid        string                // the user id to run the commmand
-	gid        string                // the group id to run the command
-	cancel     context.CancelFunc    // cancel function using to cancel the process
-	running    bool                  // running is the state of the process
-	startTime  time.Time             // the process start time, should be used with running=true
-	triedCount int                   // triedCount is the process failed count
-	pid        int                   // the process pid
-	proc       *process_util.Process // the gopsutils process instance
+	Name    string   // process name
+	Command string   // the command to execute
+	Args    []string // the arguments for command
+	User    string   // the user to run the command
+	uid     string   // the user id to run the command
+
+	*exec.Cmd
+	stat          chan *Process
+	lastAliveTime time.Duration
+	timer         *time.Timer
+	lock          sync.Mutex
+	pid           int
+	logFunc       OutputFunc
 }
 
 // NewProcess create a new process
-func NewProcess(process Process) *Process {
-	process.running = false
-	process.triedCount = 0
-
-	if process.User != "" {
-		sysUser, err := user.Lookup(process.User)
-		if err != nil {
-			log.Module("process").Warningf("lookup user %s failed: %s", process.User, err.Error())
-		} else {
-			process.uid = sysUser.Uid
-			process.gid = sysUser.Gid
-		}
+func NewProcess(name string, command string, args []string, username string) *Process {
+	process := Process{
+		Name:    name,
+		Command: command,
+		Args:    args,
+		User:    username,
+		stat:    make(chan *Process),
 	}
 
-	if process.Group != "" {
-		sysGroup, err := user.LookupGroup(process.Group)
+	// need root privilege to set user or group, because setuid and setgid are privileged calls
+	if username != "" {
+		sysUser, err := user.Lookup(username)
 		if err != nil {
-			log.Module("process").Warningf("lookup group %s failed: %s", process.Group, err.Error())
+			log.Module("process").Warningf("lookup user %s failed: %s", username, err.Error())
 		} else {
-			process.gid = sysGroup.Gid
+			process.uid = sysUser.Uid
 		}
 	}
 
 	return &process
 }
 
-// IsRunning return the process status
-func (process *Process) IsRunning() bool {
-	return process.running
-}
+// setOutputFunc set a function to receive process output
+func (process *Process) setOutputFunc(f OutputFunc) *Process {
+	process.logFunc = f
 
-// AliveTime return the process alive time
-func (process *Process) AliveTime() float64 {
-	if !process.running {
-		return 0
-	}
-
-	return time.Since(process.startTime).Seconds()
+	return process
 }
 
 // Start start the process
-func (process *Process) Start() <-chan struct{} {
-	stopped := make(chan struct{})
-
+func (process *Process) start() <-chan *Process {
 	go func() {
-		process.run()
-		stopped <- struct{}{}
-	}()
+		startTime := time.Now()
 
-	return stopped
-}
+		defer func() {
+			process.pid = 0
+			process.lastAliveTime = time.Now().Sub(startTime)
+			log.Module("process").Warningf("process %s finished", process.Name)
+			process.stat <- process
+		}()
 
-func (process *Process) run() {
-	if process.running {
-		log.Module("process").Warningf("process %s is running, request abort", process.Name)
-		return
-	}
+		cmd := exec.Command(process.Command, process.Args...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid: true,
+		}
 
-	process.running = true
-	process.startTime = time.Now()
-	process.triedCount++
+		if process.uid != "" {
+			cmd.SysProcAttr.Credential = createCredential(process.uid)
+		}
 
-	log.Module("process").Debugf("process %s start...", process.Name)
+		stdoutPipe, _ := cmd.StdoutPipe()
+		stderrPipe, _ := cmd.StderrPipe()
 
-	defer func() {
-		process.running = false
-		log.Module("process").Debugf("process %s stoped, alive %.4fs...", process.Name, process.AliveTime())
-	}()
+		go process.consoleLog(LogTypeStdout, &stdoutPipe)
+		go process.consoleLog(LogTypeStderr, &stderrPipe)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	process.cancel = cancel
+		if err := cmd.Start(); err != nil {
+			log.Module("process").Errorf("command %s start failed: %s", process.Name, err.Error())
+			return
+		}
 
-	cmd := exec.CommandContext(ctx, process.Command, process.Args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
+		process.lock.Lock()
+		process.pid = cmd.Process.Pid
+		process.lock.Unlock()
 
-	if process.uid != "" || process.gid != "" {
-		cmd.SysProcAttr.Credential = createCredential(process.uid, process.gid)
-	}
-
-	stdoutPipe, _ := cmd.StdoutPipe()
-	stderrPipe, _ := cmd.StderrPipe()
-
-	go consoleLog(process.Name, "debug", &stdoutPipe)
-	go consoleLog(process.Name, "error", &stderrPipe)
-
-	if err := cmd.Start(); err != nil {
-		log.Module("process").Errorf("command %s start failed: %s", process.Name, err.Error())
-		return
-	}
-
-	process.pid = cmd.Process.Pid
-	proc, err := process_util.NewProcess(int32(process.pid))
-	process.proc = proc
-	if err != nil {
-		log.Module("process").Errorf("can not get process info for %s: %s", process.Name, err.Error())
-	}
-
-	if err := cmd.Wait(); err != nil {
-		log.Module("process").Errorf("command %s execute failed: %s", process.Name, err.Error())
-	}
-}
-
-// Stop stop the process
-func (process *Process) Stop() <-chan struct{} {
-	stopped := make(chan struct{})
-	process.cancel()
-
-	go func() {
-		for {
-			if !process.IsRunning() {
-				stopped <- struct{}{}
-			}
-			time.Sleep(1 * time.Second)
+		if err := cmd.Wait(); err != nil {
+			log.Module("process").Errorf("command %s execute failed: %s", process.Name, err.Error())
 		}
 	}()
 
-	return stopped
+	return process.stat
 }
 
-// Uptime return the uptime for the process
-func (process *Process) Uptime() (uptime time.Time, err error) {
-	if process.proc == nil {
-		err = fmt.Errorf("can not get process info for process %s", process.Name)
+// retryDelayTime get the next retry delay
+func (process *Process) retryDelayTime() time.Duration {
+	if process.lastAliveTime.Seconds() < 5 {
+		return 5 * time.Second
+	}
+
+	return 0
+}
+
+// RemoveTimer remove the timer
+func (process *Process) removeTimer() {
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	if process.timer != nil {
+		process.timer.Stop()
+		process.timer = nil
+	}
+}
+
+func (process *Process) stop(timeout time.Duration) {
+	process.removeTimer()
+
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	if process.pid <= 0 {
 		return
 	}
 
-	createTime, err := process.proc.CreateTime()
+	proc, err := os.FindProcess(process.pid)
 	if err != nil {
+		log.Module("process").Warningf("process %s with pid=%d doesn't exist", process.Name, process.pid)
 		return
 	}
 
-	uptime = time.Unix(0, createTime*int64(time.Millisecond))
+	stopped := make(chan interface{})
+	go func() {
+		proc.Signal(syscall.SIGTERM)
+		close(stopped)
 
-	return
-}
+		log.Module("process").Debugf("process %s gracefully stopped", process.Name)
+	}()
 
-// Info return the underlying process instance
-func (process *Process) Info() (*process_util.Process, error) {
-	if process.proc == nil {
-		return nil, fmt.Errorf("can not get process info for process %s", process.Name)
+	select {
+	case <-stopped:
+		return
+	case <-time.After(timeout):
+		proc.Signal(syscall.SIGKILL)
+		log.Module("process").Debugf("process %s forced stopped", process.Name)
 	}
-
-	return process.proc, nil
 }
 
-func consoleLog(name, logType string, input *io.ReadCloser) error {
+func (process *Process) consoleLog(logType OutputType, input *io.ReadCloser) error {
 	reader := bufio.NewReader(*input)
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil || io.EOF == err {
 			if err != io.EOF {
-				return fmt.Errorf("comand %s output failed: %s", name, err.Error())
+				return fmt.Errorf("process %s output failed: %s", process.Name, err.Error())
 			}
 			break
 		}
 
-		if logType == "error" {
-			log.Module("process." + name).Error(strings.TrimRight(line, "\n"))
-		} else {
-			log.Module("process." + name).Debug(strings.TrimRight(line, "\n"))
+		if process.logFunc != nil {
+			process.logFunc(logType, strings.Trim(line, "\n"), process)
 		}
 	}
 
 	return nil
 }
 
-func createCredential(uid, gid string) *syscall.Credential {
+func createCredential(uid string) *syscall.Credential {
 	credential := syscall.Credential{}
 	if uid != "" {
 		uidVal, _ := strconv.Atoi(uid)
 		credential.Uid = uint32(uidVal)
-	}
-
-	if gid != "" {
-		gidVal, _ := strconv.Atoi(gid)
-		credential.Gid = uint32(gidVal)
 	}
 
 	return &credential
