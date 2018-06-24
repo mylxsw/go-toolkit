@@ -43,7 +43,7 @@ func (manager *Manager) Watch(ctx context.Context) {
 		case process := <-manager.restartProcess:
 			go manager.startProcess(process, process.retryDelayTime())
 		case <-ctx.Done():
-			log.Module("process").Debug("it's time to close all process...")
+			log.Module("process").Debug("it's time to close all processes...")
 			for _, program := range manager.programs {
 				for _, proc := range program.processes {
 					proc.stop(manager.closeTimeout)
