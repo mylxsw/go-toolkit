@@ -25,10 +25,12 @@ func NewManager(closeTimeout time.Duration, processOutputFunc OutputFunc) *Manag
 	}
 }
 
+// AddProgram add a new program to manager
 func (manager *Manager) AddProgram(name string, command string, procNum int, username string) {
 	manager.programs[name] = NewProgram(name, command, username, procNum).initProcesses(manager.processOutputFunc)
 }
 
+// Watch start watch process
 func (manager *Manager) Watch(ctx context.Context) {
 	for _, program := range manager.programs {
 		for _, proc := range program.processes {
@@ -41,6 +43,7 @@ func (manager *Manager) Watch(ctx context.Context) {
 		case process := <-manager.restartProcess:
 			go manager.startProcess(process, process.retryDelayTime())
 		case <-ctx.Done():
+			log.Module("process").Debug("it's time to close all process...")
 			for _, program := range manager.programs {
 				for _, proc := range program.processes {
 					proc.stop(manager.closeTimeout)
