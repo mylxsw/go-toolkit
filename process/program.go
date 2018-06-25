@@ -14,6 +14,7 @@ type Program struct {
 	processes []*Process
 }
 
+// NewProgram create a new Program
 func NewProgram(name, command, username string, procNum int) *Program {
 	return &Program{
 		Name:      name,
@@ -40,6 +41,7 @@ func (program *Program) initProcesses(outputFunc OutputFunc) *Program {
 	return program
 }
 
+// Processes get all processes for the program
 func (program *Program) Processes() []*Process {
 	return program.processes
 }

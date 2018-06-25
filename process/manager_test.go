@@ -16,7 +16,9 @@ func TestManager(t *testing.T) {
 	manager.AddProgram("test", "/bin/sleep 1", 5, "")
 	manager.AddProgram("prometheus", "/bin/echo Hello", 1, "")
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	manager.Watch(ctx)
 }
 

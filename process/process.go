@@ -16,13 +16,17 @@ import (
 	"github.com/mylxsw/go-toolkit/log"
 )
 
+// OutputType command output type
 type OutputType string
 
 const (
+	// LogTypeStderr stderr output
 	LogTypeStderr = OutputType("stderr")
+	// LogTypeStdout stdout output
 	LogTypeStdout = OutputType("stdout")
 )
 
+// OutputFunc process output handler
 type OutputFunc func(logType OutputType, line string, process *Process)
 
 // Process is a program instance
