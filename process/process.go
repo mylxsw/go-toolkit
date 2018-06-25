@@ -36,13 +36,13 @@ type Process struct {
 	Args    []string // the arguments for command
 	User    string   // the user to run the command
 	uid     string   // the user id to run the command
+	PID     int
 
 	*exec.Cmd
 	stat          chan *Process
 	lastAliveTime time.Duration
 	timer         *time.Timer
 	lock          sync.Mutex
-	pid           int
 	logFunc       OutputFunc
 }
 
@@ -82,7 +82,7 @@ func (process *Process) start() <-chan *Process {
 		startTime := time.Now()
 
 		defer func() {
-			process.pid = 0
+			process.PID = 0
 			process.lastAliveTime = time.Now().Sub(startTime)
 			log.Module("process").Warningf("process %s finished", process.Name)
 			process.stat <- process
@@ -109,7 +109,7 @@ func (process *Process) start() <-chan *Process {
 		}
 
 		process.lock.Lock()
-		process.pid = cmd.Process.Pid
+		process.PID = cmd.Process.Pid
 		process.lock.Unlock()
 
 		if err := cmd.Wait(); err != nil {
@@ -146,13 +146,13 @@ func (process *Process) stop(timeout time.Duration) {
 	process.lock.Lock()
 	defer process.lock.Unlock()
 
-	if process.pid <= 0 {
+	if process.PID <= 0 {
 		return
 	}
 
-	proc, err := os.FindProcess(process.pid)
+	proc, err := os.FindProcess(process.PID)
 	if err != nil {
-		log.Module("process").Warningf("process %s with pid=%d doesn't exist", process.Name, process.pid)
+		log.Module("process").Warningf("process %s with pid=%d doesn't exist", process.Name, process.PID)
 		return
 	}
 
