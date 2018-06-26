@@ -31,7 +31,7 @@ func (program *Program) initProcesses(outputFunc OutputFunc) *Program {
 
 	for i := 0; i < program.ProcNum; i++ {
 		program.processes = append(program.processes, NewProcess(
-			fmt.Sprintf("%s-%d", program.Name, i),
+			fmt.Sprintf("%s/%d", program.Name, i),
 			command,
 			args,
 			program.User,
