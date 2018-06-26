@@ -44,6 +44,7 @@ type Process struct {
 	timer         *time.Timer
 	lock          sync.Mutex
 	logFunc       OutputFunc
+	LastErrorMsg  string // last error message
 }
 
 // NewProcess create a new process
@@ -105,6 +106,7 @@ func (process *Process) start() <-chan *Process {
 
 		if err := cmd.Start(); err != nil {
 			log.Module("process").Errorf("process %s start failed: %s", process.Name, err.Error())
+			process.LastErrorMsg = err.Error()
 			return
 		}
 
@@ -114,6 +116,7 @@ func (process *Process) start() <-chan *Process {
 
 		if err := cmd.Wait(); err != nil {
 			log.Module("process").Warningf("process %s stopped with error : %s", process.Name, err.Error())
+			process.LastErrorMsg = err.Error()
 		}
 	}()
 
