@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -89,14 +88,7 @@ func (process *Process) start() <-chan *Process {
 			process.stat <- process
 		}()
 
-		cmd := exec.Command(process.Command, process.Args...)
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Setpgid: true,
-		}
-
-		if process.uid != "" {
-			cmd.SysProcAttr.Credential = createCredential(process.uid)
-		}
+		cmd := process.createCmd()
 
 		stdoutPipe, _ := cmd.StdoutPipe()
 		stderrPipe, _ := cmd.StderrPipe()
@@ -193,14 +185,4 @@ func (process *Process) consoleLog(logType OutputType, input *io.ReadCloser) err
 	}
 
 	return nil
-}
-
-func createCredential(uid string) *syscall.Credential {
-	credential := syscall.Credential{}
-	if uid != "" {
-		uidVal, _ := strconv.Atoi(uid)
-		credential.Uid = uint32(uidVal)
-	}
-
-	return &credential
 }
