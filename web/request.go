@@ -1,16 +1,22 @@
 package web
 
 import (
-	"net/http"
-	"github.com/gorilla/context"
+	"fmt"
 	"io"
 	"io/ioutil"
-	"fmt"
+	"net/http"
+
+	"github.com/gorilla/context"
 )
 
 // Request 请求对象封装
 type Request struct {
 	r *http.Request
+}
+
+// Raw get the underlying http.Request
+func (req *Request) Raw() *http.Request {
+	return req.r
 }
 
 // Set 设置一个变量，存储到当前请求
