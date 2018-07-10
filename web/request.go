@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,6 +18,17 @@ type Request struct {
 // Raw get the underlying http.Request
 func (req *Request) Raw() *http.Request {
 	return req.r
+}
+
+// UnmarshalToJSON unmarshal request body as json object
+// result must be reference to a variable
+func (req *Request) UnmarshalToJSON(v interface{}) error {
+	data, err := ioutil.ReadAll(req.r.Body)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(data, v)
 }
 
 // Set 设置一个变量，存储到当前请求

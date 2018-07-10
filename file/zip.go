@@ -9,8 +9,8 @@ import (
 
 // ZipFile is a file wrapper contains filename and path
 type ZipFile struct {
-	Name string
-	Path string
+	Name string `json:"name"`
+	Path string `json:"path"`
 }
 
 // CreateZipArchiveFile creaate a zip archive file from files
