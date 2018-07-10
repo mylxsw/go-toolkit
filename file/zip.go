@@ -14,7 +14,13 @@ type ZipFile struct {
 }
 
 // CreateZipArchiveFile creaate a zip archive file from files
-func CreateZipArchiveFile(saveAs string, files []ZipFile) error {
+func CreateZipArchiveFile(saveAs string, files []ZipFile) (err error) {
+	defer func() {
+		if err != nil {
+			os.Remove(saveAs)
+		}
+	}()
+
 	saveAsFile, err := os.Create(saveAs)
 	if err != nil {
 		return fmt.Errorf("can not create destination zip archive file: %s", err.Error())
@@ -22,7 +28,8 @@ func CreateZipArchiveFile(saveAs string, files []ZipFile) error {
 
 	defer saveAsFile.Close()
 
-	return CreateZipArchive(saveAsFile, files)
+	err = CreateZipArchive(saveAsFile, files)
+	return
 }
 
 // CreateZipArchive create a zip archive
