@@ -60,7 +60,7 @@ func NewProcess(name string, command string, args []string, username string) *Pr
 	if username != "" {
 		sysUser, err := user.Lookup(username)
 		if err != nil {
-			log.Module("process").Warningf("lookup user %s failed: %s", username, err.Error())
+			log.Module(module).Warningf("lookup user %s failed: %s", username, err.Error())
 		} else {
 			process.uid = sysUser.Uid
 		}
@@ -84,7 +84,7 @@ func (process *Process) start() <-chan *Process {
 		defer func() {
 			process.PID = 0
 			process.lastAliveTime = time.Now().Sub(startTime)
-			log.Module("process").Warningf("process %s finished", process.Name)
+			log.Module(module).Warningf("process %s finished", process.Name)
 			process.stat <- process
 		}()
 
@@ -97,7 +97,7 @@ func (process *Process) start() <-chan *Process {
 		go process.consoleLog(LogTypeStderr, &stderrPipe)
 
 		if err := cmd.Start(); err != nil {
-			log.Module("process").Errorf("process %s start failed: %s", process.Name, err.Error())
+			log.Module(module).Errorf("process %s start failed: %s", process.Name, err.Error())
 			process.LastErrorMsg = err.Error()
 			return
 		}
@@ -107,7 +107,7 @@ func (process *Process) start() <-chan *Process {
 		process.lock.Unlock()
 
 		if err := cmd.Wait(); err != nil {
-			log.Module("process").Warningf("process %s stopped with error : %s", process.Name, err.Error())
+			log.Module(module).Warningf("process %s stopped with error : %s", process.Name, err.Error())
 			process.LastErrorMsg = err.Error()
 		}
 	}()
@@ -147,7 +147,7 @@ func (process *Process) stop(timeout time.Duration) {
 
 	proc, err := os.FindProcess(process.PID)
 	if err != nil {
-		log.Module("process").Warningf("process %s with pid=%d doesn't exist", process.Name, process.PID)
+		log.Module(module).Warningf("process %s with pid=%d doesn't exist", process.Name, process.PID)
 		return
 	}
 
@@ -156,7 +156,7 @@ func (process *Process) stop(timeout time.Duration) {
 		proc.Signal(syscall.SIGTERM)
 		close(stopped)
 
-		log.Module("process").Debugf("process %s gracefully stopped", process.Name)
+		log.Module(module).Debugf("process %s gracefully stopped", process.Name)
 	}()
 
 	select {
@@ -164,7 +164,7 @@ func (process *Process) stop(timeout time.Duration) {
 		return
 	case <-time.After(timeout):
 		proc.Signal(syscall.SIGKILL)
-		log.Module("process").Debugf("process %s forced stopped", process.Name)
+		log.Module(module).Debugf("process %s forced stopped", process.Name)
 	}
 }
 

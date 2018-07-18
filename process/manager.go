@@ -7,6 +7,8 @@ import (
 	"github.com/mylxsw/go-toolkit/log"
 )
 
+const module = "process"
+
 // Manager is process manager
 type Manager struct {
 	programs          map[string]*Program
@@ -43,7 +45,7 @@ func (manager *Manager) Watch(ctx context.Context) {
 		case process := <-manager.restartProcess:
 			go manager.startProcess(process, process.retryDelayTime())
 		case <-ctx.Done():
-			log.Module("process").Debug("it's time to close all processes...")
+			log.Module(module).Debug("it's time to close all processes...")
 			for _, program := range manager.programs {
 				for _, proc := range program.processes {
 					proc.stop(manager.closeTimeout)
@@ -56,7 +58,7 @@ func (manager *Manager) Watch(ctx context.Context) {
 
 func (manager *Manager) startProcess(process *Process, delay time.Duration) {
 	if delay > 0 {
-		log.Module("process").Debugf("process %s will start after %.2fs", process.Name, delay.Seconds())
+		log.Module(module).Debugf("process %s will start after %.2fs", process.Name, delay.Seconds())
 	}
 
 	process.lock.Lock()
@@ -65,7 +67,7 @@ func (manager *Manager) startProcess(process *Process, delay time.Duration) {
 	process.timer = time.AfterFunc(delay, func() {
 		process.removeTimer()
 
-		log.Module("process").Debugf("process %s starting...", process.Name)
+		log.Module(module).Debugf("process %s starting...", process.Name)
 		manager.restartProcess <- <-process.start()
 	})
 
