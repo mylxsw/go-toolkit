@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 )
 
 // Request 请求对象封装
@@ -49,6 +50,20 @@ func (req *Request) Clear() {
 // HTTPRequest 返回http.Request对象
 func (req *Request) HTTPRequest() *http.Request {
 	return req.r
+}
+
+// PathVar 获取路径中的变量
+func (req *Request) PathVar(key string) string {
+	if res, ok := mux.Vars(req.r)[key]; ok {
+		return res
+	}
+
+	return ""
+}
+
+// PathVars 获取所有的路径变量
+func (req *Request) PathVars() map[string]string {
+	return mux.Vars(req.r)
 }
 
 // Input 获取表单输入
