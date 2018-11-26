@@ -9,8 +9,10 @@ import (
 
 // JSONUtils a json utils object
 type JSONUtils struct {
-	message []byte
-	obj     interface{}
+	message         []byte
+	maxLevel        int
+	obj             interface{}
+	skipSimpleArray bool
 }
 
 // KvPair a kv pair
@@ -20,21 +22,23 @@ type KvPair struct {
 }
 
 // New create a new json utils object and parse json to object
-func New(message []byte) (*JSONUtils, error) {
+func New(message []byte, maxLevel int, skipSimpleArray bool) (*JSONUtils, error) {
 	var obj interface{}
 	if err := json.Unmarshal(message, &obj); err != nil {
 		return nil, err
 	}
 
 	return &JSONUtils{
-		message: message,
-		obj:     obj,
+		message:         message,
+		obj:             obj,
+		maxLevel:        maxLevel,
+		skipSimpleArray: skipSimpleArray,
 	}, nil
 }
 
 // ToKvPairsArray convert to an array with all kv pair
 func (ju *JSONUtils) ToKvPairsArray() []KvPair {
-	return ju.createKvPairs(ju.obj)
+	return ju.createKvPairs(ju.obj, 1)
 }
 
 // ToKvPairs convert to a map with kv
@@ -47,7 +51,7 @@ func (ju *JSONUtils) ToKvPairs() map[string]string {
 	return kvPairs
 }
 
-func (ju *JSONUtils) createKvPairs(obj interface{}) []KvPair {
+func (ju *JSONUtils) createKvPairs(obj interface{}, level int) []KvPair {
 	kvPairs := make([]KvPair, 0)
 
 	objValue := reflect.ValueOf(obj)
@@ -63,7 +67,7 @@ func (ju *JSONUtils) createKvPairs(obj interface{}) []KvPair {
 			keyStr := fmt.Sprintf("%s", key)
 			value := objValue.MapIndex(key).Interface()
 
-			subValues := ju.recursiveSubValue(keyStr, value)
+			subValues := ju.recursiveSubValue(keyStr, value, level+1)
 			if len(subValues) == 0 {
 				kvPairs = append(kvPairs, KvPair{
 					Key:   keyStr,
@@ -79,7 +83,7 @@ func (ju *JSONUtils) createKvPairs(obj interface{}) []KvPair {
 			keyStr := fmt.Sprintf("[%d]", i)
 			value := objValue.Index(i).Interface()
 
-			subValues := ju.recursiveSubValue(keyStr, value)
+			subValues := ju.recursiveSubValue(keyStr, value, level+1)
 			if len(subValues) == 0 {
 				kvPairs = append(kvPairs, KvPair{
 					Key:   keyStr,
@@ -97,7 +101,7 @@ func (ju *JSONUtils) createKvPairs(obj interface{}) []KvPair {
 	return kvPairs
 }
 
-func (ju *JSONUtils) recursiveSubValue(keyStr string, value interface{}) []KvPair {
+func (ju *JSONUtils) recursiveSubValue(keyStr string, value interface{}, level int) []KvPair {
 	kvPairs := make([]KvPair, 0)
 	reflectValue := reflect.ValueOf(value)
 	if !reflectValue.IsValid() {
@@ -108,7 +112,45 @@ func (ju *JSONUtils) recursiveSubValue(keyStr string, value interface{}) []KvPai
 
 	switch valueType {
 	case reflect.Slice, reflect.Map, reflect.Array:
-		for _, kv := range ju.createKvPairs(value) {
+		if ju.maxLevel > 0 && level > ju.maxLevel {
+			valueJSON, _ := json.Marshal(value)
+			kvPairs = append(kvPairs, KvPair{
+				Key:   keyStr,
+				Value: string(valueJSON),
+			})
+
+			break
+		}
+
+		// skip simple array
+		if reflectValue.Len() > 0 && ju.skipSimpleArray && valueType != reflect.Map {
+			subValueKind := reflectValue.Index(0).Type().Kind()
+			if subValueKind != reflect.Map && subValueKind != reflect.Slice && subValueKind != reflect.Array {
+				valueJSON, _ := json.Marshal(value)
+				kvPairs = append(kvPairs, KvPair{
+					Key:   keyStr,
+					Value: string(valueJSON),
+				})
+
+				break
+			}
+		}
+
+		walkSub := ju.createKvPairs(value, level)
+		// if sub value is empty, set value to [] or {}
+		if len(walkSub) == 0 {
+			emptyValue := "[]"
+			if valueType == reflect.Map {
+				emptyValue = "{}"
+			}
+
+			kvPairs = append(kvPairs, KvPair{
+				Key:   keyStr,
+				Value: emptyValue,
+			})
+		}
+
+		for _, kv := range walkSub {
 			kvPairs = append(kvPairs, KvPair{
 				Key:   keyStr + "." + kv.Key,
 				Value: kv.Value,
