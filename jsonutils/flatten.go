@@ -50,8 +50,12 @@ func (ju *JSONUtils) ToKvPairs() map[string]string {
 func (ju *JSONUtils) createKvPairs(obj interface{}) []KvPair {
 	kvPairs := make([]KvPair, 0)
 
-	objType := reflect.ValueOf(obj).Type()
 	objValue := reflect.ValueOf(obj)
+	if !objValue.IsValid() {
+		return kvPairs
+	}
+
+	objType := objValue.Type()
 
 	switch objType.Kind() {
 	case reflect.Map:
@@ -59,7 +63,14 @@ func (ju *JSONUtils) createKvPairs(obj interface{}) []KvPair {
 			keyStr := fmt.Sprintf("%s", key)
 			value := objValue.MapIndex(key).Interface()
 
-			for _, kv := range ju.recursiveSubValue(keyStr, value) {
+			subValues := ju.recursiveSubValue(keyStr, value)
+			if len(subValues) == 0 {
+				kvPairs = append(kvPairs, KvPair{
+					Key:   keyStr,
+					Value: "(null)",
+				})
+			}
+			for _, kv := range subValues {
 				kvPairs = append(kvPairs, kv)
 			}
 		}
@@ -68,7 +79,15 @@ func (ju *JSONUtils) createKvPairs(obj interface{}) []KvPair {
 			keyStr := fmt.Sprintf("[%d]", i)
 			value := objValue.Index(i).Interface()
 
-			for _, kv := range ju.recursiveSubValue(keyStr, value) {
+			subValues := ju.recursiveSubValue(keyStr, value)
+			if len(subValues) == 0 {
+				kvPairs = append(kvPairs, KvPair{
+					Key:   keyStr,
+					Value: "(null)",
+				})
+			}
+
+			for _, kv := range subValues {
 				kvPairs = append(kvPairs, kv)
 			}
 		}
@@ -80,7 +99,12 @@ func (ju *JSONUtils) createKvPairs(obj interface{}) []KvPair {
 
 func (ju *JSONUtils) recursiveSubValue(keyStr string, value interface{}) []KvPair {
 	kvPairs := make([]KvPair, 0)
-	valueType := reflect.ValueOf(value).Type().Kind()
+	reflectValue := reflect.ValueOf(value)
+	if !reflectValue.IsValid() {
+		return kvPairs
+	}
+
+	valueType := reflectValue.Type().Kind()
 
 	switch valueType {
 	case reflect.Slice, reflect.Map, reflect.Array:

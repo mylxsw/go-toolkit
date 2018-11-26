@@ -36,6 +36,14 @@ var message1 = `{
     }
 }`
 
+var message2 = `{
+	"message": null,
+	"context": {
+		"msg": null,
+		"reason": "unknown"
+	}
+}`
+
 func TestToKvPairs(t *testing.T) {
 	ju, err := New([]byte(message1))
 	if err != nil {
@@ -50,6 +58,7 @@ func TestToKvPairs(t *testing.T) {
 	if len(kvPairs) != 19 {
 		t.Errorf("kv pairs not matched")
 	}
+
 }
 
 func TestToKvPairsArray(t *testing.T) {
@@ -61,5 +70,21 @@ func TestToKvPairsArray(t *testing.T) {
 	kvPairs := ju.ToKvPairsArray()
 	if len(kvPairs) != 19 {
 		t.Errorf("kv pairs not matched")
+	}
+}
+
+func TestNullValue(t *testing.T) {
+	ju, err := New([]byte(message2))
+	if err != nil {
+		t.Errorf("parse json failed: %s", err.Error())
+	}
+
+	pairs := ju.ToKvPairs()
+	if v, ok := pairs["context.msg"]; !ok || v != "(null)" {
+		t.Errorf("kv pairs with null value test failed")
+	}
+
+	if v, ok := pairs["message"]; !ok || v != "(null)" {
+		t.Errorf("kv pairs with null value test failed")
 	}
 }
