@@ -1,8 +1,11 @@
-package jsonutils
+package jsonutils_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/mylxsw/go-toolkit/jsonutils"
 )
 
 var message1 = `{
@@ -53,8 +56,32 @@ var message2 = `{
 	}
 }`
 
+var message3 = `{
+	"messages": [
+		{
+			"id": 123,
+			"key": "xxx"
+		},
+		{
+			"id": 444,
+			"key": "yyyy"
+		}
+	]
+}`
+
+var message4 = `[
+	{
+		"key": 123
+	},
+	{
+		"key": 444
+	}
+]`
+
+var message5 = `[13, 44, 55, 66]`
+
 func TestToKvPairs(t *testing.T) {
-	ju, err := New([]byte(message1), 0, false)
+	ju, err := jsonutils.New([]byte(message1), 0, false)
 	if err != nil {
 		t.Errorf("parse json failed: %s", err.Error())
 	}
@@ -71,7 +98,7 @@ func TestToKvPairs(t *testing.T) {
 }
 
 func TestToKvPairsArray(t *testing.T) {
-	ju, err := New([]byte(message1), 0, false)
+	ju, err := jsonutils.New([]byte(message1), 0, false)
 	if err != nil {
 		t.Errorf("parse json failed: %s", err.Error())
 	}
@@ -83,7 +110,7 @@ func TestToKvPairsArray(t *testing.T) {
 }
 
 func TestNullValue(t *testing.T) {
-	ju, err := New([]byte(message2), 0, false)
+	ju, err := jsonutils.New([]byte(message2), 0, false)
 	if err != nil {
 		t.Errorf("parse json failed: %s", err.Error())
 	}
@@ -103,7 +130,7 @@ func TestNullValue(t *testing.T) {
 }
 
 func TestKvPairsWithLevelLimit(t *testing.T) {
-	ju, err := New([]byte(message1), 2, false)
+	ju, err := jsonutils.New([]byte(message1), 2, false)
 	if err != nil {
 		t.Errorf("parse json failed: %s", err.Error())
 	}
@@ -117,7 +144,7 @@ func TestKvPairsWithLevelLimit(t *testing.T) {
 	}
 }
 func TestNullValueSkipSimpleValue(t *testing.T) {
-	ju, err := New([]byte(message2), 0, true)
+	ju, err := jsonutils.New([]byte(message2), 0, true)
 	if err != nil {
 		t.Errorf("parse json failed: %s", err.Error())
 	}
@@ -134,4 +161,50 @@ func TestNullValueSkipSimpleValue(t *testing.T) {
 	// for k, v := range pairs {
 	// 	fmt.Printf("%s: %s\n", k, v)
 	// }
+}
+
+func TestComplexArrayValue(t *testing.T) {
+	ju, err := jsonutils.New([]byte(message3), 2, true)
+	if err != nil {
+		t.Errorf("parse json failed: %s", err.Error())
+	}
+
+	pairs := ju.ToKvPairsArray()
+	// for _, kv := range pairs {
+	// 	fmt.Printf("%s : %s\n", kv.Key, kv.Value)
+	// }
+
+	if len(pairs) != 2 {
+		t.Errorf("kv pairs test failed for complex array")
+	}
+}
+
+func TestRootArrayType(t *testing.T) {
+	ju, err := jsonutils.New([]byte(message4), 2, true)
+	if err != nil {
+		t.Errorf("parse json failed: %s", err.Error())
+	}
+
+	pairs := ju.ToKvPairsArray()
+
+	for _, kv := range pairs {
+		fmt.Printf("%s: %s\n", kv.Key, kv.Value)
+	}
+}
+
+func TestRootArrayType2(t *testing.T) {
+	ju, err := jsonutils.New([]byte(message5), 1, true)
+	if err != nil {
+		t.Errorf("parse json failed: %s", err.Error())
+	}
+
+	pairs := ju.ToKvPairsArray()
+
+	// for _, kv := range pairs {
+	// 	fmt.Printf("%s: %s\n", kv.Key, kv.Value)
+	// }
+
+	if len(pairs) <= 0 {
+		t.Errorf("test failed")
+	}
 }

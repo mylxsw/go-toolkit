@@ -124,7 +124,8 @@ func (ju *JSONUtils) recursiveSubValue(keyStr string, value interface{}, level i
 
 		// skip simple array
 		if reflectValue.Len() > 0 && ju.skipSimpleArray && valueType != reflect.Map {
-			subValueKind := reflectValue.Index(0).Type().Kind()
+			subValue := reflect.ValueOf(reflectValue.Index(0).Interface())
+			subValueKind := subValue.Kind()
 			if subValueKind != reflect.Map && subValueKind != reflect.Slice && subValueKind != reflect.Array {
 				valueJSON, _ := json.Marshal(value)
 				kvPairs = append(kvPairs, KvPair{
