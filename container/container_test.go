@@ -48,16 +48,33 @@ func TestPrototype(t *testing.T) {
 		}
 	}); err != nil {
 		t.Errorf("test failed: %s", err)
+		return
+	}
+	// reflect.TypeOf((*UserService)(nil))
+	{
+		userService, err := c.Get(reflect.TypeOf((*UserService)(nil)))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		if userService.(*UserService).GetUser() != expectedValue {
+			t.Error("test failed")
+		}
 	}
 
-	userService, err := c.Get(reflect.TypeOf((*UserService)(nil)))
-	if err != nil {
-		t.Error(err)
+	{
+		userService, err := c.Get((*UserService)(nil))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		if userService.(*UserService).GetUser() != expectedValue {
+			t.Error("test failed")
+		}
 	}
 
-	if userService.(*UserService).GetUser() != expectedValue {
-		t.Error("test failed")
-	}
 }
 
 func TestInterfaceInjection(t *testing.T) {

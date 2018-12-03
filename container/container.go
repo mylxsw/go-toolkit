@@ -189,11 +189,14 @@ func (c *Container) Get(key interface{}) (interface{}, error) {
 	if !ok {
 		// if can not found key in c.objects, then try to iterate all object
 		// until find a object which can assigned to key
+		k, ok := key.(reflect.Type)
+		if !ok {
+			k = reflect.TypeOf(key)
+		}
+
 		for _, v := range c.objects {
-			if k, ok := key.(reflect.Type); ok {
-				if v.typ.AssignableTo(k) {
-					return v.Value()
-				}
+			if v.typ.AssignableTo(k) {
+				return v.Value()
 			}
 		}
 
