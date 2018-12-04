@@ -1,37 +1,51 @@
 package web
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/mylxsw/go-toolkit/container"
+)
 
 // WebContext 作为一个web请求的上下文信息
 type WebContext struct {
-	Response *Response
-	Request  *Request
+	Response  *Response
+	Request   *Request
+	Container *container.Container
+}
+
+type webHandler struct {
+	handle    WebHandler
+	container *container.Container
 }
 
 // WebHandler 控制器方法
 type WebHandler func(context *WebContext) HTTPResponse
 
 // NewWebHandler 创建一个WebHandler，用于传递给Router
-func NewWebHandler(handler WebHandler, decors ...HandlerDecorator) WebHandler {
+func NewWebHandler(c *container.Container, handler WebHandler, decors ...HandlerDecorator) webHandler {
 	for i := range decors {
 		d := decors[len(decors)-i-1]
 		handler = d(handler)
 	}
 
-	return handler
+	return webHandler{
+		handle:    handler,
+		container: c,
+	}
 }
 
 // ServeHTTP 实现http.HandlerFunc接口
-func (h WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h webHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	context := &WebContext{
 		Response: &Response{
 			w:       w,
 			headers: make(map[string]string),
 		},
-		Request: &Request{r: r},
+		Request:   &Request{r: r},
+		Container: h.container,
 	}
 
-	resp := h(context)
+	resp := h.handle(context)
 	if resp != nil {
 		resp.CreateResponse()
 	}

@@ -1,15 +1,18 @@
 package web
 
 import (
-	"github.com/gorilla/mux"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/mux"
+	"github.com/mylxsw/go-toolkit/container"
 )
 
 // Router 定制的路由
 type Router struct {
 	router      *mux.Router
+	container   *container.Container
 	routes      []route
 	middlewares []HandlerDecorator
 	prefix      string
@@ -32,22 +35,28 @@ const (
 
 // NewRouter 创建一个路由器
 func NewRouter(middlewares ...HandlerDecorator) *Router {
-	return create(mux.NewRouter(), middlewares...)
+	return NewRouterWithContainer(container.New(), middlewares...)
+}
+
+// NewRouterWithContainer 创建一个路由器，带有依赖注入容器支持
+func NewRouterWithContainer(c *container.Container, middlewares ...HandlerDecorator) *Router {
+	return create(c, mux.NewRouter(), middlewares...)
 }
 
 // create 创建定制路由器
-func create(router *mux.Router, middlewares ...HandlerDecorator) *Router {
+func create(c *container.Container, router *mux.Router, middlewares ...HandlerDecorator) *Router {
 	return &Router{
 		router:      router,
 		routes:      []route{},
 		middlewares: middlewares,
 		prefix:      "",
+		container:   c,
 	}
 }
 
 // Group 创建路由组
 func (router *Router) Group(prefix string, f func(rou *Router), decors ...HandlerDecorator) {
-	r := create(router.router, decors...)
+	r := create(router.container, router.router, decors...)
 	r.prefix = prefix
 
 	f(r)
@@ -67,9 +76,9 @@ func (router *Router) Perform() *mux.Router {
 	for _, r := range router.routes {
 		var handler http.Handler
 		if r.handlerType == handlerTypeWebHandler {
-			handler = NewWebHandler(r.webHandler, r.middlewares...)
+			handler = NewWebHandler(router.container, r.webHandler, r.middlewares...)
 		} else {
-			handler = Middleware(r.handler, r.middlewares...)
+			handler = Middleware(router.container, r.handler, r.middlewares...)
 		}
 		route := router.router.Handle(r.path, handler)
 		if r.method != "" {
