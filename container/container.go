@@ -183,18 +183,29 @@ func (c *Container) BindWithKey(key interface{}, initialize interface{}, prototy
 // Resolve inject args for func by callback
 // callback func(...)
 func (c *Container) Resolve(callback interface{}) error {
+	_, err := c.Call(callback)
+	return err
+}
+
+// Call call a callback function and return it's results
+func (c *Container) Call(callback interface{}) ([]interface{}, error) {
 	callbackValue := reflect.ValueOf(callback)
 	if !callbackValue.IsValid() {
-		return ErrInvalidArgs
+		return nil, ErrInvalidArgs
 	}
 
 	args, err := c.funcArgs(callbackValue.Type())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	callbackValue.Call(args)
-	return nil
+	returnValues := callbackValue.Call(args)
+	results := make([]interface{}, len(returnValues))
+	for index, val := range returnValues {
+		results[index] = val.Interface()
+	}
+
+	return results, nil
 }
 
 // Get get instance by key from container

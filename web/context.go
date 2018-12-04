@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/mylxsw/go-toolkit/container"
@@ -74,7 +75,31 @@ func (ctx *WebContext) NewHTMLResponse(res string) HTMLResponse {
 	return NewHTMLResponse(ctx.Response, res)
 }
 
+// NewErrorResponse create a error response
+func (ctx *WebContext) NewErrorResponse(res string, code int) ErrorResponse {
+	return NewErrorResponse(ctx.Response, res, code)
+}
+
 // Redirect 页面跳转
 func (ctx *WebContext) Redirect(location string, code int) RedirectResponse {
 	return NewRedirectResponse(ctx.Response, ctx.Request, location, code)
+}
+
+// Resolve resolve implements dependency injection for http handler
+func (ctx *WebContext) Resolve(callback interface{}) HTTPResponse {
+	results, err := ctx.Container.Call(callback)
+	if err != nil {
+		return ctx.NewErrorResponse(fmt.Sprintf("resolve dependency error: %s", err.Error()), 500)
+	}
+
+	if len(results) == 0 {
+		return ctx.NewHTMLResponse("")
+	}
+
+	resp, ok := results[0].(HTTPResponse)
+	if ok {
+		return resp
+	}
+
+	return ctx.NewJSONResponse(results)
 }

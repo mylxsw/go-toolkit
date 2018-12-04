@@ -1,6 +1,5 @@
 package web
 
-
 // HTMLResponse HTML响应
 type HTMLResponse struct {
 	response *Response
@@ -23,4 +22,3 @@ func (resp HTMLResponse) CreateResponse() error {
 	resp.response.Flush()
 	return nil
 }
-
