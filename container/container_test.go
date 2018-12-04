@@ -48,8 +48,8 @@ func TestPrototype(t *testing.T) {
 
 		return &UserRepo{connStr: connStr.(string)}, nil
 	})
-	c.Prototype(func(userRepo *UserRepo) (*UserService, error) {
-		return &UserService{repo: userRepo}, nil
+	c.Prototype(func(userRepo *UserRepo) *UserService {
+		return &UserService{repo: userRepo}
 	})
 
 	if err := c.Resolve(func(userService *UserService) {

@@ -62,12 +62,15 @@ func (e *Entity) createValue() (interface{}, error) {
 	}
 
 	returnValues := reflect.ValueOf(e.initializeFunc).Call(argValues)
-	if len(returnValues) != 2 {
+	if len(returnValues) <= 0 {
 		return nil, ErrInvalidReturnValueCount
 	}
 
-	if !returnValues[1].IsNil() && returnValues[1].Interface() != nil {
-		return nil, returnValues[1].Interface().(error)
+	if len(returnValues) > 1 && !returnValues[1].IsNil() && returnValues[1].Interface() != nil {
+		err, ok := returnValues[1].Interface().(error)
+		if ok {
+			return nil, err
+		}
 	}
 
 	return returnValues[0].Interface(), nil
@@ -157,7 +160,7 @@ func (c *Container) Bind(initialize interface{}, prototype bool) error {
 	}
 
 	initializeType := reflect.ValueOf(initialize).Type()
-	if initializeType.NumOut() != 2 || !c.isErrorType(initializeType.Out(1)) {
+	if initializeType.NumOut() <= 0 {
 		return ErrInvalidArgs
 	}
 
@@ -173,7 +176,7 @@ func (c *Container) BindWithKey(key interface{}, initialize interface{}, prototy
 	}
 
 	initializeType := reflect.ValueOf(initialize).Type()
-	if initializeType.NumOut() != 2 || !c.isErrorType(initializeType.Out(1)) {
+	if initializeType.NumOut() <= 0 {
 		return ErrInvalidArgs
 	}
 
@@ -263,10 +266,6 @@ func (c *Container) bindWith(key interface{}, typ reflect.Type, initialize inter
 	return nil
 }
 
-func (c *Container) isErrorType(t reflect.Type) bool {
-	return t.Implements(reflect.TypeOf((*error)(nil)).Elem())
-}
-
 func (c *Container) funcArgs(t reflect.Type) ([]reflect.Value, error) {
 	argsSize := t.NumIn()
 	argValues := make([]reflect.Value, argsSize)
@@ -294,4 +293,8 @@ func (c *Container) instanceOfType(t reflect.Type) (reflect.Value, error) {
 	}
 
 	return reflect.ValueOf(arg), nil
+}
+
+func isErrorType(t reflect.Type) bool {
+	return t.Implements(reflect.TypeOf((*error)(nil)).Elem())
 }
