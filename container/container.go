@@ -21,7 +21,7 @@ var (
 
 // Entity represent a entity in container
 type Entity struct {
-	sync.RWMutex
+	lock sync.RWMutex
 
 	key            interface{} // entity key
 	initializeFunc interface{} // initializeFunc is a func to initialize entity
@@ -39,8 +39,8 @@ func (e *Entity) Value() (interface{}, error) {
 		return e.createValue()
 	}
 
-	e.Lock()
-	defer e.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 
 	if e.value == nil {
 		val, err := e.createValue()
@@ -75,7 +75,7 @@ func (e *Entity) createValue() (interface{}, error) {
 
 // Container is a dependency injection container
 type Container struct {
-	sync.RWMutex
+	lock sync.RWMutex
 
 	objects      map[interface{}]*Entity
 	objectSlices []*Entity
@@ -119,8 +119,8 @@ func (c *Container) BindValue(key interface{}, value interface{}) error {
 		return ErrInvalidArgs
 	}
 
-	c.Lock()
-	defer c.Unlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	if _, ok := c.objects[key]; ok {
 		return ErrRepeatedBind
@@ -212,8 +212,8 @@ func (c *Container) Get(key interface{}) (interface{}, error) {
 }
 
 func (c *Container) bindWith(key interface{}, typ reflect.Type, initialize interface{}, prototype bool) error {
-	c.Lock()
-	defer c.Unlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	if _, ok := c.objects[key]; ok {
 		return ErrRepeatedBind
