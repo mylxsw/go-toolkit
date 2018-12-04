@@ -27,6 +27,7 @@ type Entity struct {
 	initializeFunc interface{} // initializeFunc is a func to initialize entity
 	value          interface{}
 	typ            reflect.Type
+	index          int // the index in the container
 
 	prototype bool
 	c         *Container
@@ -76,13 +77,15 @@ func (e *Entity) createValue() (interface{}, error) {
 type Container struct {
 	sync.RWMutex
 
-	objects map[interface{}]*Entity
+	objects      map[interface{}]*Entity
+	objectSlices []*Entity
 }
 
 // New create a new container
 func New() *Container {
 	return &Container{
-		objects: make(map[interface{}]*Entity),
+		objects:      make(map[interface{}]*Entity),
+		objectSlices: make([]*Entity, 0),
 	}
 }
 
@@ -123,14 +126,18 @@ func (c *Container) BindValue(key interface{}, value interface{}) error {
 		return ErrRepeatedBind
 	}
 
-	c.objects[key] = &Entity{
+	entity := Entity{
 		initializeFunc: nil,
 		key:            key,
 		typ:            reflect.TypeOf(value),
 		value:          value,
+		index:          len(c.objectSlices),
 		c:              c,
 		prototype:      false,
 	}
+
+	c.objects[key] = &entity
+	c.objectSlices = append(c.objectSlices, &entity)
 
 	return nil
 }
@@ -166,9 +173,9 @@ func (c *Container) BindWithKey(key interface{}, initialize interface{}, prototy
 	return c.bindWith(key, initializeType.Out(0), initialize, prototype)
 }
 
-// Invoke inject args for func by callback
+// Resolve inject args for func by callback
 // callback func(...)
-func (c *Container) Invoke(callback interface{}) error {
+func (c *Container) Resolve(callback interface{}) error {
 	callbackValue := reflect.ValueOf(callback)
 	if !callbackValue.IsValid() {
 		return ErrInvalidArgs
@@ -185,25 +192,23 @@ func (c *Container) Invoke(callback interface{}) error {
 
 // Get get instance by key from container
 func (c *Container) Get(key interface{}) (interface{}, error) {
-	object, ok := c.objects[key]
+	keyReflectType, ok := key.(reflect.Type)
 	if !ok {
-		// if can not found key in c.objects, then try to iterate all object
-		// until find a object which can assigned to key
-		k, ok := key.(reflect.Type)
-		if !ok {
-			k = reflect.TypeOf(key)
-		}
-
-		for _, v := range c.objects {
-			if v.typ.AssignableTo(k) {
-				return v.Value()
-			}
-		}
-
-		return nil, ErrObjectNotFound
+		keyReflectType = reflect.TypeOf(key)
 	}
 
-	return object.Value()
+	for _, obj := range c.objectSlices {
+
+		if obj.key == key || obj.key == keyReflectType {
+			return obj.Value()
+		}
+
+		if obj.typ.AssignableTo(keyReflectType) {
+			return obj.Value()
+		}
+	}
+
+	return nil, ErrObjectNotFound
 }
 
 func (c *Container) bindWith(key interface{}, typ reflect.Type, initialize interface{}, prototype bool) error {
@@ -214,14 +219,18 @@ func (c *Container) bindWith(key interface{}, typ reflect.Type, initialize inter
 		return ErrRepeatedBind
 	}
 
-	c.objects[key] = &Entity{
+	entity := Entity{
 		initializeFunc: initialize,
 		key:            key,
 		typ:            typ,
 		value:          nil,
+		index:          len(c.objectSlices),
 		c:              c,
 		prototype:      prototype,
 	}
+
+	c.objects[key] = &entity
+	c.objectSlices = append(c.objectSlices, &entity)
 
 	return nil
 }

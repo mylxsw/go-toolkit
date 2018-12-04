@@ -12,6 +12,16 @@ type GetUserInterface interface {
 	GetUser() string
 }
 
+type GetRoleInterface interface {
+	GetRole() string
+}
+
+type RoleService struct{}
+
+func (r RoleService) GetRole() string {
+	return "admin"
+}
+
 type UserService struct {
 	repo *UserRepo
 }
@@ -42,7 +52,7 @@ func TestPrototype(t *testing.T) {
 		return &UserService{repo: userRepo}, nil
 	})
 
-	if err := c.Invoke(func(userService *UserService) {
+	if err := c.Resolve(func(userService *UserService) {
 		if userService.GetUser() != expectedValue {
 			t.Error("test failed")
 		}
@@ -92,11 +102,24 @@ func TestInterfaceInjection(t *testing.T) {
 		return &UserService{repo: userRepo}, nil
 	})
 
-	if err := c.Invoke(func(userService GetUserInterface) {
+	if err := c.Resolve(func(userService GetUserInterface) {
 		if userService.GetUser() != expectedValue {
 			t.Error("test failed")
 		}
 	}); err != nil {
 		t.Errorf("test failed: %s", err)
+	}
+
+	c.Prototype(func() (RoleService, error) {
+		return RoleService{}, nil
+	})
+
+	err := c.Resolve(func(roleService GetRoleInterface) {
+		if roleService.GetRole() != "admin" {
+			t.Error("test failed")
+		}
+	})
+	if err != nil {
+		t.Error(err)
 	}
 }
