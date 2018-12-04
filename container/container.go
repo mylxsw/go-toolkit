@@ -89,6 +89,13 @@ func New() *Container {
 	}
 }
 
+// Must if err is not nil, panic it
+func (c *Container) Must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Prototype bind a prototype
 // initialize func(...) (value, error)
 func (c *Container) Prototype(initialize interface{}) error {
@@ -209,6 +216,16 @@ func (c *Container) Get(key interface{}) (interface{}, error) {
 	}
 
 	return nil, ErrObjectNotFound
+}
+
+// MustGet get instance by key from container
+func (c *Container) MustGet(key interface{}) interface{} {
+	res, err := c.Get(key)
+	if err != nil {
+		panic(err)
+	}
+
+	return res
 }
 
 func (c *Container) bindWith(key interface{}, typ reflect.Type, initialize interface{}, prototype bool) error {
