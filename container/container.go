@@ -1,22 +1,9 @@
 package container
 
 import (
-	"errors"
+	"fmt"
 	"reflect"
 	"sync"
-)
-
-var (
-	// ErrObjectNotFound is an error object represent object not found
-	ErrObjectNotFound = errors.New("the object can not be found in container")
-	// ErrArgNotInstanced is an erorr object represent arg not instanced
-	ErrArgNotInstanced = errors.New("the arg can not be found in container")
-	// ErrInvalidReturnValueCount is an error object represent return values count not match
-	ErrInvalidReturnValueCount = errors.New("invalid return value count")
-	// ErrRepeatedBind is an error object represent bind a value repeated
-	ErrRepeatedBind = errors.New("can not bind a value with repeated key")
-	// ErrInvalidArgs is an error object represent invalid args
-	ErrInvalidArgs = errors.New("invalid args")
 )
 
 // Entity represent a entity in container
@@ -63,7 +50,7 @@ func (e *Entity) createValue() (interface{}, error) {
 
 	returnValues := reflect.ValueOf(e.initializeFunc).Call(argValues)
 	if len(returnValues) <= 0 {
-		return nil, ErrInvalidReturnValueCount
+		return nil, ErrInvalidReturnValueCount("expect greater than 0, got 0")
 	}
 
 	if len(returnValues) > 1 && !returnValues[1].IsNil() && returnValues[1].Interface() != nil {
@@ -126,14 +113,14 @@ func (c *Container) SingletonWithKey(key interface{}, initialize interface{}) er
 // BindValue bing a value to container
 func (c *Container) BindValue(key interface{}, value interface{}) error {
 	if value == nil {
-		return ErrInvalidArgs
+		return ErrInvalidArgs("value is nil")
 	}
 
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	if _, ok := c.objects[key]; ok {
-		return ErrRepeatedBind
+		return ErrRepeatedBind("key repeated")
 	}
 
 	entity := Entity{
@@ -156,12 +143,12 @@ func (c *Container) BindValue(key interface{}, value interface{}) error {
 // initialize func(...) (value, error)
 func (c *Container) Bind(initialize interface{}, prototype bool) error {
 	if !reflect.ValueOf(initialize).IsValid() {
-		return ErrInvalidArgs
+		return ErrInvalidArgs("initialize is nil")
 	}
 
 	initializeType := reflect.ValueOf(initialize).Type()
 	if initializeType.NumOut() <= 0 {
-		return ErrInvalidArgs
+		return ErrInvalidArgs("expect func return values count greater than 0, but got 0")
 	}
 
 	typ := initializeType.Out(0)
@@ -172,12 +159,12 @@ func (c *Container) Bind(initialize interface{}, prototype bool) error {
 // initialize func(...) (value, error)
 func (c *Container) BindWithKey(key interface{}, initialize interface{}, prototype bool) error {
 	if !reflect.ValueOf(initialize).IsValid() {
-		return ErrInvalidArgs
+		return ErrInvalidArgs("initialize is nil")
 	}
 
 	initializeType := reflect.ValueOf(initialize).Type()
 	if initializeType.NumOut() <= 0 {
-		return ErrInvalidArgs
+		return ErrInvalidArgs("expect func return values count greater than 0, but got 0")
 	}
 
 	return c.bindWith(key, initializeType.Out(0), initialize, prototype)
@@ -194,7 +181,7 @@ func (c *Container) Resolve(callback interface{}) error {
 func (c *Container) Call(callback interface{}) ([]interface{}, error) {
 	callbackValue := reflect.ValueOf(callback)
 	if !callbackValue.IsValid() {
-		return nil, ErrInvalidArgs
+		return nil, ErrInvalidArgs("callback is nil")
 	}
 
 	args, err := c.funcArgs(callbackValue.Type())
@@ -229,7 +216,7 @@ func (c *Container) Get(key interface{}) (interface{}, error) {
 		}
 	}
 
-	return nil, ErrObjectNotFound
+	return nil, ErrObjectNotFound(fmt.Sprintf("key=%s", key))
 }
 
 // MustGet get instance by key from container
@@ -247,7 +234,7 @@ func (c *Container) bindWith(key interface{}, typ reflect.Type, initialize inter
 	defer c.lock.Unlock()
 
 	if _, ok := c.objects[key]; ok {
-		return ErrRepeatedBind
+		return ErrRepeatedBind("key repeated")
 	}
 
 	entity := Entity{
@@ -289,7 +276,7 @@ func (c *Container) instanceOfType(t reflect.Type) (reflect.Value, error) {
 
 	arg, err := c.Get(t)
 	if err != nil {
-		return reflect.Value{}, ErrArgNotInstanced
+		return reflect.Value{}, ErrArgNotInstanced(err.Error())
 	}
 
 	return reflect.ValueOf(arg), nil
@@ -297,4 +284,29 @@ func (c *Container) instanceOfType(t reflect.Type) (reflect.Value, error) {
 
 func isErrorType(t reflect.Type) bool {
 	return t.Implements(reflect.TypeOf((*error)(nil)).Elem())
+}
+
+// ErrObjectNotFound is an error object represent object not found
+func ErrObjectNotFound(msg string) error {
+	return fmt.Errorf("the object can not be found in container: %s", msg)
+}
+
+// ErrArgNotInstanced is an erorr object represent arg not instanced
+func ErrArgNotInstanced(msg string) error {
+	return fmt.Errorf("the arg can not be found in container: %s", msg)
+}
+
+// ErrInvalidReturnValueCount is an error object represent return values count not match
+func ErrInvalidReturnValueCount(msg string) error {
+	return fmt.Errorf("invalid return value count: %s", msg)
+}
+
+// ErrRepeatedBind is an error object represent bind a value repeated
+func ErrRepeatedBind(msg string) error {
+	return fmt.Errorf("can not bind a value with repeated key: %s", msg)
+}
+
+// ErrInvalidArgs is an error object represent invalid args
+func ErrInvalidArgs(msg string) error {
+	return fmt.Errorf("invalid args: %s", msg)
 }
