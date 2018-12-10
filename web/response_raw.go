@@ -10,6 +10,12 @@ func NewRawResponse(response *Response) RawResponse {
 	return RawResponse{response: response}
 }
 
+// Response get real response object
+func (resp RawResponse) Response() *Response {
+	return resp.response
+}
+
+// CreateResponse flush response to client
 func (resp RawResponse) CreateResponse() error {
 	resp.response.Flush()
 	return nil
