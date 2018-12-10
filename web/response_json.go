@@ -1,8 +1,8 @@
 package web
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 )
 
 // JSONResponse json响应
@@ -29,9 +29,8 @@ func (resp JSONResponse) CreateResponse() error {
 	}
 
 	resp.response.Header("Content-Type", "application/json; charset=utf-8")
-	resp.response.SetContent(string(res))
+	resp.response.SetContent(res)
 
 	resp.response.Flush()
 	return nil
 }
-

@@ -17,7 +17,7 @@ func NewHTMLResponse(response *Response, res string) HTMLResponse {
 // CreateResponse 创建响应内容
 func (resp HTMLResponse) CreateResponse() error {
 	resp.response.Header("Content-Type", "text/html; charset=utf-8")
-	resp.response.SetContent(resp.original)
+	resp.response.SetContent([]byte(resp.original))
 
 	resp.response.Flush()
 	return nil

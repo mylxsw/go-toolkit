@@ -12,7 +12,7 @@ type Response struct {
 	w        http.ResponseWriter
 	headers  map[string]string
 	cookie   *http.Cookie
-	original string
+	original []byte
 }
 
 // ResponseWriter 获取http.ResponseWriter对象
@@ -21,7 +21,7 @@ func (resp *Response) ResponseWriter() http.ResponseWriter {
 }
 
 // SetContent 设置响应内容
-func (resp *Response) SetContent(content string) {
+func (resp *Response) SetContent(content []byte) {
 	resp.original = content
 }
 
