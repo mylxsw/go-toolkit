@@ -70,6 +70,11 @@ func (ctx *WebContext) NewAPIResponse(code string, message string, data interfac
 	})
 }
 
+// NewRawResponse create a new RawResponse
+func (ctx *WebContext) NewRawResponse() RawResponse {
+	return NewRawResponse(ctx.Response)
+}
+
 // NewHTMLResponse 创建一个HTML响应
 func (ctx *WebContext) NewHTMLResponse(res string) HTMLResponse {
 	return NewHTMLResponse(ctx.Response, res)
