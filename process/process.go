@@ -28,29 +28,93 @@ type OutputFunc func(logType OutputType, line string, process *Process)
 
 // Process is a program instance
 type Process struct {
-	Name    string   // process name
-	Command string   // the command to execute
-	Args    []string // the arguments for command
-	User    string   // the user to run the command
+	name    string   // process name
+	command string   // the command to execute
+	args    []string // the arguments for command
+	user    string   // the user to run the command
 	uid     string   // the user id to run the command
-	PID     int
+	pid     int
 
 	*exec.Cmd
-	stat          chan *Process
-	lastAliveTime time.Duration
-	timer         *time.Timer
-	lock          sync.Mutex
-	logFunc       OutputFunc
-	LastErrorMsg  string // last error message
+	stat             chan *Process
+	lastAliveTime    time.Duration
+	timer            *time.Timer
+	lock             sync.Mutex
+	logFunc          OutputFunc
+	lastErrorMessage string // last error message
+}
+
+// GetPID get process pid
+func (process *Process) GetPID() int {
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	return process.pid
+}
+
+// SetPID update process pid
+func (process *Process) SetPID(pid int) {
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	process.pid = pid
+}
+
+// GetName get process name
+func (process *Process) GetName() string {
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	return process.name
+}
+
+// GetUser get process user
+func (process *Process) GetUser() string {
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	return process.user
+}
+
+// GetCommand get command
+func (process *Process) GetCommand() string {
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	return process.command
+}
+
+// GetArgs get command args
+func (process *Process) GetArgs() []string {
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	return process.args
+}
+
+// GetLastErrorMessage get last error message
+func (process *Process) GetLastErrorMessage() string {
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	return process.lastErrorMessage
+}
+
+// SetLastErrorMessage update last error message
+func (process *Process) SetLastErrorMessage(msg string) {
+	process.lock.Lock()
+	defer process.lock.Unlock()
+
+	process.lastErrorMessage = msg
 }
 
 // NewProcess create a new process
 func NewProcess(name string, command string, args []string, username string) *Process {
 	process := Process{
-		Name:    name,
-		Command: command,
-		Args:    args,
-		User:    username,
+		name:    name,
+		command: command,
+		args:    args,
+		user:    username,
 		stat:    make(chan *Process),
 	}
 
@@ -80,9 +144,10 @@ func (process *Process) start() <-chan *Process {
 		startTime := time.Now()
 
 		defer func() {
-			process.PID = 0
+			process.SetPID(0)
 			process.lastAliveTime = time.Now().Sub(startTime)
-			logger.Warningf("process %s finished", process.Name)
+
+			logger.Warningf("process %s finished", process.name)
 			process.stat <- process
 		}()
 
@@ -95,18 +160,16 @@ func (process *Process) start() <-chan *Process {
 		go process.consoleLog(LogTypeStderr, &stderrPipe)
 
 		if err := cmd.Start(); err != nil {
-			logger.Errorf("process %s start failed: %s", process.Name, err.Error())
-			process.LastErrorMsg = err.Error()
+			logger.Errorf("process %s start failed: %s", process.name, err.Error())
+			process.SetLastErrorMessage(err.Error())
 			return
 		}
 
-		process.lock.Lock()
-		process.PID = cmd.Process.Pid
-		process.lock.Unlock()
+		process.SetPID(cmd.Process.Pid)
 
 		if err := cmd.Wait(); err != nil {
-			logger.Warningf("process %s stopped with error : %s", process.Name, err.Error())
-			process.LastErrorMsg = err.Error()
+			logger.Warningf("process %s stopped with error : %s", process.name, err.Error())
+			process.SetLastErrorMessage(err.Error())
 		}
 	}()
 
@@ -136,17 +199,20 @@ func (process *Process) removeTimer() {
 func (process *Process) stop(timeout time.Duration) {
 	process.removeTimer()
 
+	pid := process.GetPID()
+	name := process.GetName()
+
 	process.lock.Lock()
 	defer process.lock.Unlock()
 
-	if process.PID <= 0 {
-		logger.Warningf("process %s with pid=%d is invalid", process.Name, process.PID)
+	if pid <= 0 {
+		logger.Warningf("process %s with pid=%d is invalid", name, pid)
 		return
 	}
 
-	proc, err := os.FindProcess(process.PID)
+	proc, err := os.FindProcess(pid)
 	if err != nil {
-		logger.Warningf("process %s with pid=%d doesn't exist", process.Name, process.PID)
+		logger.Warningf("process %s with pid=%d doesn't exist", name, pid)
 		return
 	}
 
@@ -155,7 +221,7 @@ func (process *Process) stop(timeout time.Duration) {
 		proc.Signal(syscall.SIGTERM)
 		close(stopped)
 
-		logger.Debugf("process %s gracefully stopped", process.Name)
+		logger.Debugf("process %s gracefully stopped", name)
 	}()
 
 	select {
@@ -163,7 +229,7 @@ func (process *Process) stop(timeout time.Duration) {
 		return
 	case <-time.After(timeout):
 		proc.Signal(syscall.SIGKILL)
-		logger.Debugf("process %s forced stopped", process.Name)
+		logger.Debugf("process %s forced stopped", name)
 	}
 }
 
@@ -173,7 +239,7 @@ func (process *Process) consoleLog(logType OutputType, input *io.ReadCloser) err
 		line, err := reader.ReadString('\n')
 		if err != nil || io.EOF == err {
 			if err != io.EOF {
-				return fmt.Errorf("process %s output failed: %s", process.Name, err.Error())
+				return fmt.Errorf("process %s output failed: %s", process.GetName(), err.Error())
 			}
 			break
 		}

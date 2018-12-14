@@ -7,6 +7,6 @@ import (
 )
 
 func (process *Process) createCmd() *exec.Cmd {
-	cmd := exec.Command(process.Command, process.Args...)
+	cmd := exec.Command(process.GetCommand(), process.GetArgs()...)
 	return cmd
 }

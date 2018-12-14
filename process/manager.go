@@ -58,7 +58,7 @@ func (manager *Manager) Watch(ctx context.Context) {
 
 func (manager *Manager) startProcess(process *Process, delay time.Duration) {
 	if delay > 0 {
-		logger.Debugf("process %s will start after %.2fs", process.Name, delay.Seconds())
+		logger.Debugf("process %s will start after %.2fs", process.GetName(), delay.Seconds())
 	}
 
 	process.lock.Lock()
@@ -67,7 +67,7 @@ func (manager *Manager) startProcess(process *Process, delay time.Duration) {
 	process.timer = time.AfterFunc(delay, func() {
 		process.removeTimer()
 
-		logger.Debugf("process %s starting...", process.Name)
+		logger.Debugf("process %s starting...", process.GetName())
 		manager.restartProcess <- <-process.start()
 	})
 
