@@ -8,6 +8,8 @@ import (
 	"github.com/mylxsw/go-toolkit/log"
 )
 
+var logger = log.Module("toolkit.fpm")
+
 // Fpm FPM进程管理对象
 type Fpm struct {
 	process *Process // phpfpm进程管理器
@@ -116,12 +118,12 @@ func (fpm *Fpm) Loop(ok chan struct{}) error {
 		return err
 	}
 
-	log.Debugf("The master process for php-fpm has started with pid=%d", fpm.process.PID())
+	logger.Debugf("The master process for php-fpm has started with pid=%d", fpm.process.PID())
 	ok <- struct{}{}
 
 	for {
 		if err := fpm.process.Wait(); err != nil {
-			log.Module("fpm").Errorf("The php-fpm process has stopped: %v", err)
+			logger.Errorf("The php-fpm process has stopped: %v", err)
 		}
 
 		// 如果进程未启动（已经手动关闭），则退出循环
@@ -136,11 +138,11 @@ func (fpm *Fpm) Loop(ok chan struct{}) error {
 
 		// 进程启动状态下，异常退出后重启进程
 		if err := fpm.start(); err != nil {
-			log.Module("fpm").Errorf("The php-fpm process start failed: %v", err)
+			logger.Errorf("The php-fpm process start failed: %v", err)
 			continue
 		}
 
-		log.Debugf("The master process for php-fpm has restarted with pid=%d", fpm.process.PID())
+		logger.Debugf("The master process for php-fpm has restarted with pid=%d", fpm.process.PID())
 	}
 
 	return nil
@@ -148,7 +150,7 @@ func (fpm *Fpm) Loop(ok chan struct{}) error {
 
 // Reload reload php-fpm process
 func (fpm *Fpm) Reload() error {
-	log.Debug("Reload php-fpm process")
+	logger.Debug("Reload php-fpm process")
 	return fpm.process.Reload()
 }
 
@@ -159,13 +161,13 @@ func (fpm *Fpm) Kill() error {
 
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("Kill fpm process failed: %v", err)
+			logger.Errorf("Kill fpm process failed: %v", err)
 		}
 	}()
 
 	err := fpm.process.Kill()
 	if err != nil {
-		log.Warningf("Kill fpm process failed: %s", err.Error())
+		logger.Warningf("Kill fpm process failed: %s", err.Error())
 		return err
 	}
 
