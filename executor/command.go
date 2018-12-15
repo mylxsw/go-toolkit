@@ -20,6 +20,8 @@ type Command struct {
 	output     chan Output
 	stdout     string
 	stderr     string
+
+	lock sync.Mutex
 }
 
 // Output 命令式输出
@@ -119,6 +121,9 @@ func (command *Command) StderrString() string {
 
 // OpenOutputChan 打开输出channel
 func (command *Command) OpenOutputChan() <-chan Output {
+	command.lock.Lock()
+	defer command.lock.Unlock()
+
 	if command.output == nil {
 		command.output = make(chan Output, outputChanSize)
 	}
@@ -127,6 +132,9 @@ func (command *Command) OpenOutputChan() <-chan Output {
 }
 
 func (command *Command) close() {
+	command.lock.Lock()
+	defer command.lock.Unlock()
+
 	if command.output != nil {
 		close(command.output)
 		command.output = nil
@@ -150,7 +158,11 @@ func (command *Command) bindOutputChan(input *io.ReadCloser, outputType OutputTy
 			command.stderr += line
 		}
 
-		if command.output != nil {
+		command.lock.Lock()
+		outputIsNotNil := command.output != nil
+		command.lock.Unlock()
+
+		if outputIsNotNil {
 			command.output <- Output{
 				Type:    outputType,
 				Content: strings.TrimRight(line, "\n"),
