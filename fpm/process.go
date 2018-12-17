@@ -188,7 +188,10 @@ func loadIniFromFile(configFile string) *ini.File {
 		f.NewSection("global")
 		f.NewSection("www")
 	} else {
-		f, _ = ini.Load(configFile)
+		f, err := ini.Load(configFile)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return f
