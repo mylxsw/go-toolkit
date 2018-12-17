@@ -2,13 +2,11 @@ module github.com/mylxsw/go-toolkit
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/docker/distribution v2.6.2+incompatible
 	github.com/fatih/color v1.7.0
 	github.com/go-ini/ini v1.39.3
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gorilla/context v1.1.1
 	github.com/gorilla/mux v1.6.2
-	github.com/jeffail/tunny v0.0.0-20180304204616-59cfa8fcb19f
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
