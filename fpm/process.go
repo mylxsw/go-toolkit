@@ -72,7 +72,9 @@ func (proc *Process) UpdateConfigFile(configFile string) {
 		f.Section("www").NewKey("group", proc.Meta.Group)
 	}
 
-	f.SaveTo(configFile)
+	if err := f.SaveTo(configFile); err != nil {
+		panic(err)
+	}
 }
 
 // Start 启动php-fpm主进程
