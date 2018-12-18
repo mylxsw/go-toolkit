@@ -8,10 +8,11 @@ import (
 
 // Logger 日志对象
 type Logger struct {
-	moduleName string
-	level      int
-	formatter  Formatter
-	writer     Writer
+	moduleName   string
+	level        int
+	formatter    Formatter
+	writer       Writer
+	timeLocation *time.Location
 }
 
 var loggers = make(map[string]*Logger)
@@ -19,16 +20,23 @@ var moduleLock sync.Mutex
 
 // defaultConfig 默认配置对象
 type defaultConfig struct {
-	logLevel  int
-	formatter Formatter
-	writer    Writer
+	logLevel     int
+	formatter    Formatter
+	writer       Writer
+	timeLocation *time.Location
 }
 
 // 默认配置信息
 var defaultLogConfig = defaultConfig{
-	logLevel:  LevelDebug,
-	formatter: &DefaultFormatter{},
-	writer:    &DefaultWriter{},
+	logLevel:     LevelDebug,
+	formatter:    &DefaultFormatter{},
+	writer:       &DefaultWriter{},
+	timeLocation: time.UTC,
+}
+
+// SetDefaultLocation set default time location
+func SetDefaultLocation(loc *time.Location) {
+	defaultLogConfig.timeLocation = loc
 }
 
 // SetDefaultLevel 设置全局默认日志输出级别
@@ -56,8 +64,9 @@ func Module(moduleName string) *Logger {
 	}
 
 	logger := &Logger{
-		moduleName: moduleName,
-		level:      defaultLogConfig.logLevel,
+		moduleName:   moduleName,
+		level:        defaultLogConfig.logLevel,
+		timeLocation: defaultLogConfig.timeLocation,
 	}
 
 	loggers[moduleName] = logger
@@ -66,7 +75,7 @@ func Module(moduleName string) *Logger {
 }
 
 func (module *Logger) output(level int, context map[string]interface{}, v ...interface{}) string {
-	message := module.getFormatter().Format(time.Now(), module.moduleName, level, context, v...)
+	message := module.getFormatter().Format(time.Now().In(module.timeLocation), module.moduleName, level, context, v...)
 	// 低于设定日志级别的日志不会输出
 	if level >= module.level {
 		module.getWriter().Write(message)
@@ -113,7 +122,7 @@ func (module *Logger) SetWriter(writer Writer) *Logger {
 func (module *Logger) getWriter() Writer {
 	moduleLock.Lock()
 	defer moduleLock.Unlock()
-	
+
 	if module.writer == nil {
 		module.SetWriter(defaultLogConfig.writer)
 	}

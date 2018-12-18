@@ -2,10 +2,14 @@ package log
 
 import (
 	"testing"
+	"time"
 )
 
 func TestModule(t *testing.T) {
 	// SetDefaultLevel(LevelCritical)
+
+	loc, _ := time.LoadLocation("Asia/Chongqing")
+	SetDefaultLocation(loc)
 
 	GetDefaultModule().SetLevel(LevelDebug)
 	Debug("xxxx")

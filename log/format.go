@@ -18,7 +18,7 @@ type DefaultFormatter struct{}
 
 // Format 日志格式化
 func (formatter DefaultFormatter) Format(currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
-	message := fmt.Sprintf("[%s] %s.%s: %s %s", currentTime.Format("2006-01-02 15:04:05"), moduleName, GetLevelName(level), fmt.Sprint(v...), formatContext(context))
+	message := fmt.Sprintf("[%s] %s.%s: %s %s", currentTime.Format(time.RFC3339), moduleName, GetLevelName(level), fmt.Sprint(v...), formatContext(context))
 
 	// 将多行内容增加前缀tab，与第一行内容分开
 	return strings.Trim(strings.Replace(message, "\n", "\n	", -1), "\n	")
@@ -38,7 +38,7 @@ type jsonOutput struct {
 
 // Format 日志格式化
 func (formatter JSONFormatter) Format(currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
-	datetime := currentTime.Format("2006-01-02 15:04:05")
+	datetime := currentTime.Format(time.RFC3339)
 
 	if context == nil {
 		context = make(map[string]interface{})
