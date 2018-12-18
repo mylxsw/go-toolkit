@@ -12,7 +12,7 @@ type Logger struct {
 	level        int
 	formatter    Formatter
 	writer       Writer
-	timeLocation *time.Location
+	timeLocation func() *time.Location
 }
 
 var loggers = make(map[string]*Logger)
@@ -64,9 +64,11 @@ func Module(moduleName string) *Logger {
 	}
 
 	logger := &Logger{
-		moduleName:   moduleName,
-		level:        defaultLogConfig.logLevel,
-		timeLocation: defaultLogConfig.timeLocation,
+		moduleName: moduleName,
+		level:      defaultLogConfig.logLevel,
+		timeLocation: func() *time.Location {
+			return defaultLogConfig.timeLocation
+		},
 	}
 
 	loggers[moduleName] = logger
@@ -74,8 +76,15 @@ func Module(moduleName string) *Logger {
 	return logger
 }
 
+// SetTimeLocation set time location for module
+func (module *Logger) SetTimeLocation(loc *time.Location) {
+	module.timeLocation = func() *time.Location {
+		return loc
+	}
+}
+
 func (module *Logger) output(level int, context map[string]interface{}, v ...interface{}) string {
-	message := module.getFormatter().Format(time.Now().In(module.timeLocation), module.moduleName, level, context, v...)
+	message := module.getFormatter().Format(time.Now().In(module.timeLocation()), module.moduleName, level, context, v...)
 	// 低于设定日志级别的日志不会输出
 	if level >= module.level {
 		module.getWriter().Write(message)
