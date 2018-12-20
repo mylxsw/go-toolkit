@@ -1,10 +1,12 @@
-package collection
+package collection_test
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/mylxsw/go-toolkit/collection"
 )
 
 var testMapData = map[string]string{
@@ -28,9 +30,9 @@ type Element2 struct {
 }
 
 func TestInvalidTypeForMap(t *testing.T) {
-	collection := MustNew(testMapData)
+	cc := collection.MustNew(testMapData)
 
-	collectionWithoutEmpty := collection.Filter(func(value string) bool {
+	collectionWithoutEmpty := cc.Filter(func(value string) bool {
 		return value != ""
 	}).Filter(func(value string, key string) bool {
 		return key != ""
@@ -42,7 +44,7 @@ func TestInvalidTypeForMap(t *testing.T) {
 		}
 	})
 
-	if collectionWithoutEmpty.Size() != 4 || collection.Size() != 6 {
+	if collectionWithoutEmpty.Size() != 4 || cc.Size() != 6 {
 		t.Error("test failed")
 	}
 
@@ -50,15 +52,15 @@ func TestInvalidTypeForMap(t *testing.T) {
 		t.Error("test failed")
 	}
 
-	if _, ok := collection.All().([]string); ok {
+	if _, ok := cc.All().([]string); ok {
 		t.Error("test failed")
 	}
 
-	if collection.IsEmpty() {
+	if cc.IsEmpty() {
 		t.Error("test failed")
 	}
 
-	if !collection.Filter(func(value string) bool {
+	if !cc.Filter(func(value string) bool {
 		return false
 	}).IsEmpty() {
 		t.Error("test failed")
@@ -66,8 +68,8 @@ func TestInvalidTypeForMap(t *testing.T) {
 }
 
 func TestInvalidTypeForArray(t *testing.T) {
-	_, err := New("hello")
-	if err == nil || err != ErrorInvalidDataType {
+	_, err := collection.New("hello")
+	if err == nil || err != collection.ErrorInvalidDataType {
 		t.Errorf("test failed")
 	}
 
@@ -76,7 +78,7 @@ func TestInvalidTypeForArray(t *testing.T) {
 	// 	return item != ""
 	// }).ToString())
 
-	collection := MustNew([]string{"hello", "world", "", "you", "are"}).Filter(func(item string) bool {
+	collection := collection.MustNew([]string{"hello", "world", "", "you", "are"}).Filter(func(item string) bool {
 		return item != ""
 	})
 
@@ -112,7 +114,7 @@ func TestInvalidTypeForArray(t *testing.T) {
 }
 
 func TestStringMapCollection(t *testing.T) {
-	collection := MustNew(testMapData)
+	collection := collection.MustNew(testMapData)
 	collection = collection.Filter(func(_, key string) bool {
 		return key != ""
 	}).Filter(func(value string) bool {
@@ -148,7 +150,7 @@ func TestStringMapCollection(t *testing.T) {
 }
 
 func TestStringCollection(t *testing.T) {
-	collection := MustNew([]interface{}{"hello", "world", "", "you", "are"})
+	collection := collection.MustNew([]interface{}{"hello", "world", "", "you", "are"})
 	collection = collection.Filter(func(item string) bool {
 		return item != ""
 	}).Map(func(item string) string {
@@ -176,7 +178,7 @@ func TestComplexMapCollection(t *testing.T) {
 		"four":  {ID: 4, Name: "Tom"},
 	}
 
-	collection := MustNew(elements)
+	collection := collection.MustNew(elements)
 	collection = collection.Filter(func(value Element, key string) bool {
 		return value.Name != ""
 	}).Map(func(value Element) Element2 {
@@ -215,7 +217,7 @@ func TestComplexCollection(t *testing.T) {
 		{ID: 4, Name: "Tom"},
 	}
 
-	collection := MustNew(elements)
+	collection := collection.MustNew(elements)
 	collection = collection.Filter(func(item Element) bool {
 		return item.Name != ""
 	}).Map(func(item Element) Element2 {
