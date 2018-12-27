@@ -98,7 +98,7 @@ func NewFpm(config *Config) *Fpm {
 // start 启动fpm master进程
 func (fpm *Fpm) start() error {
 	// 先尝试关闭已经存在的fpm（当前项目相关的）
-	CloseExistProcess(fpm.process.GetProcessMeta().PidFile)
+	_ = CloseExistProcess(fpm.process.GetProcessMeta().PidFile)
 
 	fpm.lock.Lock()
 	defer fpm.lock.Unlock()

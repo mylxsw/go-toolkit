@@ -54,22 +54,22 @@ func (proc *Process) GetProcessMeta() Meta {
 func (proc *Process) UpdateConfigFile(configFile string) {
 	f := loadIniFromFile(configFile)
 
-	f.Section("global").NewKey("pid", proc.Meta.PidFile)
-	f.Section("global").NewKey("error_log", proc.Meta.ErrorLog)
-	f.Section("www").NewKey("listen", proc.Meta.Listen)
-	f.Section("www").NewKey("slowlog", proc.Meta.SlowLog)
-	f.Section("www").NewKey("pm", proc.Meta.PM)
-	f.Section("www").NewKey("pm.max_children", proc.Meta.MaxChildren)
-	f.Section("www").NewKey("pm.start_servers", proc.Meta.StartServers)
-	f.Section("www").NewKey("pm.min_spare_servers", proc.Meta.MinSpareServers)
-	f.Section("www").NewKey("pm.max_spare_servers", proc.Meta.MaxSpareServers)
-	f.Section("www").NewKey("request_slowlog_timeout", proc.Meta.SlowlogTimeout)
+	_, _ = f.Section("global").NewKey("pid", proc.Meta.PidFile)
+	_, _ = f.Section("global").NewKey("error_log", proc.Meta.ErrorLog)
+	_, _ = f.Section("www").NewKey("listen", proc.Meta.Listen)
+	_, _ = f.Section("www").NewKey("slowlog", proc.Meta.SlowLog)
+	_, _ = f.Section("www").NewKey("pm", proc.Meta.PM)
+	_, _ = f.Section("www").NewKey("pm.max_children", proc.Meta.MaxChildren)
+	_, _ = f.Section("www").NewKey("pm.start_servers", proc.Meta.StartServers)
+	_, _ = f.Section("www").NewKey("pm.min_spare_servers", proc.Meta.MinSpareServers)
+	_, _ = f.Section("www").NewKey("pm.max_spare_servers", proc.Meta.MaxSpareServers)
+	_, _ = f.Section("www").NewKey("request_slowlog_timeout", proc.Meta.SlowlogTimeout)
 
 	if proc.Meta.User != "" {
-		f.Section("www").NewKey("user", proc.Meta.User)
+		_, _ = f.Section("www").NewKey("user", proc.Meta.User)
 	}
 	if proc.Meta.Group != "" {
-		f.Section("www").NewKey("group", proc.Meta.Group)
+		_, _ = f.Section("www").NewKey("group", proc.Meta.Group)
 	}
 
 	if err := f.SaveTo(configFile); err != nil {
@@ -175,7 +175,7 @@ func CloseExistProcess(pidfileName string) error {
 	pid, _ := pidfile.ReadPIDFile(pidfileName)
 	if pid > 0 {
 		process, _ := os.FindProcess(pid)
-		process.Signal(os.Interrupt)
+		_ = process.Signal(os.Interrupt)
 	}
 
 	return nil
@@ -185,8 +185,8 @@ func loadIniFromFile(configFile string) *ini.File {
 	var f *ini.File
 	if !file.Exist(configFile) {
 		f = ini.Empty()
-		f.NewSection("global")
-		f.NewSection("www")
+		_, _ = f.NewSection("global")
+		_, _ = f.NewSection("www")
 	} else {
 		f2, err := ini.Load(configFile)
 		if err != nil {

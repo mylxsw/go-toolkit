@@ -92,10 +92,20 @@ func (c *Container) Prototype(initialize interface{}) error {
 	return c.Bind(initialize, true)
 }
 
+// BindPrototype bind a prototype, if failed then panic
+func (c *Container) MustPrototype(initialize interface{}) {
+	c.Must(c.Prototype(initialize))
+}
+
 // PrototypeWithKey bind a prototype with key
 // initialize func(...) (value, error)
 func (c *Container) PrototypeWithKey(key interface{}, initialize interface{}) error {
 	return c.BindWithKey(key, initialize, true)
+}
+
+// MustPrototypeWithKey bind a prototype with key, it failed, then panic
+func (c *Container) MustPrototypeWithKey(key interface{}, initialize interface{}) {
+	c.Must(c.PrototypeWithKey(key, initialize))
 }
 
 // Singleton bind a singleton
@@ -104,13 +114,23 @@ func (c *Container) Singleton(initialize interface{}) error {
 	return c.Bind(initialize, false)
 }
 
+// MustSingleton bind a singleton, if bind failed, then panic
+func (c *Container) MustSingleton(initialize interface{}) {
+	c.Must(c.Singleton(initialize))
+}
+
 // SingletonWithKey bind a singleton with key
 // initialize func(...) (value, error)
 func (c *Container) SingletonWithKey(key interface{}, initialize interface{}) error {
 	return c.BindWithKey(key, initialize, false)
 }
 
-// BindValue bing a value to container
+// MustSingletonWithKey bind a singleton with key, if failed, then panic
+func (c *Container) MustSingletonWithKey(key interface{}, initialize interface{}) {
+	c.Must(c.SingletonWithKey(key, initialize))
+}
+
+// BindValue bind a value to container
 func (c *Container) BindValue(key interface{}, value interface{}) error {
 	if value == nil {
 		return ErrInvalidArgs("value is nil")
@@ -139,6 +159,11 @@ func (c *Container) BindValue(key interface{}, value interface{}) error {
 	return nil
 }
 
+// MustBindValue bind a value to container, if failed, panic it
+func (c *Container) MustBindValue(key interface{}, value interface{}) {
+	c.Must(c.BindValue(key, value))
+}
+
 // Bind bind a initialize for object
 // initialize func(...) (value, error)
 func (c *Container) Bind(initialize interface{}, prototype bool) error {
@@ -155,6 +180,11 @@ func (c *Container) Bind(initialize interface{}, prototype bool) error {
 	return c.bindWith(typ, typ, initialize, prototype)
 }
 
+// MustBind bind a initialize, if failed then panic
+func (c *Container) MustBind(initialize interface{}, prototype bool) {
+	c.Must(c.Bind(initialize, prototype))
+}
+
 // BindWithKey bind a initialize for object with a key
 // initialize func(...) (value, error)
 func (c *Container) BindWithKey(key interface{}, initialize interface{}, prototype bool) error {
@@ -168,6 +198,11 @@ func (c *Container) BindWithKey(key interface{}, initialize interface{}, prototy
 	}
 
 	return c.bindWith(key, initializeType.Out(0), initialize, prototype)
+}
+
+// MustBindWithKey bind a initialize for object with a key, if failed then panic
+func (c *Container) MustBindWithKey(key interface{}, initialize interface{}, prototype bool) {
+	c.Must(c.BindWithKey(key, initialize, prototype))
 }
 
 // Resolve inject args for func by callback

@@ -78,15 +78,21 @@ func (req *Request) File(key string) (*UploadedFile, error) {
 		return nil, err
 	}
 
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	tempFile, err := ioutil.TempFile("/tmp", "yunsom-go-tools-")
 	if err != nil {
 		return nil, fmt.Errorf("无法创建临时文件 %s", err.Error())
 	}
-	defer tempFile.Close()
+	defer func() {
+		_ = tempFile.Close()
+	}()
 
-	io.Copy(tempFile, file)
+	if _, err := io.Copy(tempFile, file); err != nil {
+		return nil, err
+	}
 
 	return &UploadedFile{
 		Header:   header,

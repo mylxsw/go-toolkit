@@ -88,12 +88,12 @@ func (command *Command) Run() (bool, error) {
 
 	go func() {
 		defer wg.Done()
-		command.bindOutputChan(&stdout, Stdout)
+		_ = command.bindOutputChan(&stdout, Stdout)
 	}()
 
 	go func() {
 		defer wg.Done()
-		command.bindOutputChan(&stderr, Stderr)
+		_ = command.bindOutputChan(&stderr, Stderr)
 	}()
 
 	if err = cmd.Wait(); err != nil {

@@ -87,7 +87,9 @@ func (module *Logger) output(level int, context map[string]interface{}, v ...int
 	message := module.getFormatter().Format(time.Now().In(module.timeLocation()), module.moduleName, level, context, v...)
 	// 低于设定日志级别的日志不会输出
 	if level >= module.level {
-		module.getWriter().Write(message)
+		if err := module.getWriter().Write(message); err != nil {
+			fmt.Printf("can not write to output: %s", err)
+		}
 	}
 
 	return message
