@@ -92,7 +92,7 @@ func (c *Container) Prototype(initialize interface{}) error {
 	return c.Bind(initialize, true)
 }
 
-// BindPrototype bind a prototype, if failed then panic
+// MustPrototype bind a prototype, if failed then panic
 func (c *Container) MustPrototype(initialize interface{}) {
 	c.Must(c.Prototype(initialize))
 }
@@ -239,6 +239,9 @@ func (c *Container) Get(key interface{}) (interface{}, error) {
 	if !ok {
 		keyReflectType = reflect.TypeOf(key)
 	}
+
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 
 	for _, obj := range c.objectSlices {
 
