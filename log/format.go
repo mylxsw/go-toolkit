@@ -37,7 +37,7 @@ func (formatter DefaultFormatter) Format(colorful bool, currentTime time.Time, m
 			ColorTextWrap(TextLightWhite, currentTime.Format(time.RFC3339)),
 			moduleName,
 			colorfulLevelName(level),
-			fmt.Sprint(v...),
+			strings.Trim(fmt.Sprint(v...), "\n"),
 			ColorTextWrap(TextLightGrey, formatContext(context)),
 		)
 	} else {
@@ -46,7 +46,7 @@ func (formatter DefaultFormatter) Format(colorful bool, currentTime time.Time, m
 			currentTime.Format(time.RFC3339),
 			moduleName,
 			GetLevelName(level),
-			fmt.Sprint(v...),
+			strings.Trim(fmt.Sprint(v...), "\n"),
 			formatContext(context),
 		)
 	}

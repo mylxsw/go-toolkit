@@ -25,7 +25,7 @@ func TestModule(t *testing.T) {
 	log.Module("order").Emergencyf("order %s created", "1234592")
 	log.Module("order").Warningf("order %s created", "1234592")
 	log.Module("order").Alertf("order %s created", "1234592")
-	log.Module("order").Criticalf("order %s created", "1234592")
+	log.Module("order").Criticalf("order %s created\n", "1234592")
 
 	log.Module("user").SetFormatter(log.NewJSONFormatter()).Error("user create failed")
 
