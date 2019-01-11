@@ -212,6 +212,11 @@ func (c *Container) Resolve(callback interface{}) error {
 	return err
 }
 
+// MustResolve inject args for func by callback
+func (c *Container) MustResolve(callback interface{}) {
+	c.Must(c.Resolve(callback))
+}
+
 // Call call a callback function and return it's results
 func (c *Container) Call(callback interface{}) ([]interface{}, error) {
 	callbackValue := reflect.ValueOf(callback)

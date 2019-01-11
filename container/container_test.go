@@ -85,6 +85,19 @@ func TestPrototype(t *testing.T) {
 		}
 	}
 
+	{
+		c.Resolve(func(cc *container.Container) {
+			userService, err := c.Get((*UserService)(nil))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			if userService.(*UserService).GetUser() != expectedValue {
+				t.Error("test failed")
+			}
+		})
+	}
 }
 
 func TestInterfaceInjection(t *testing.T) {
