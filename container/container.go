@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
@@ -20,7 +21,7 @@ type Entity struct {
 	c         *Container
 }
 
-// Value instance value if not initiailzed
+// Value instance value if not initialized
 func (e *Entity) Value() (interface{}, error) {
 	if e.prototype {
 		return e.createValue()
@@ -73,10 +74,38 @@ type Container struct {
 
 // New create a new container
 func New() *Container {
-	return &Container{
+	cc := &Container{
 		objects:      make(map[interface{}]*Entity),
 		objectSlices: make([]*Entity, 0),
 	}
+
+	cc.MustSingleton(func() *Container {
+		return cc
+	})
+
+	cc.MustSingleton(func() context.Context {
+		return context.Background()
+	})
+
+	return cc
+}
+
+// NewWithContext create a new container with context support
+func NewWithContext(ctx context.Context) *Container {
+	cc := &Container{
+		objects:      make(map[interface{}]*Entity),
+		objectSlices: make([]*Entity, 0),
+	}
+
+	cc.MustSingleton(func() *Container {
+		return cc
+	})
+
+	cc.MustSingleton(func() context.Context {
+		return ctx
+	})
+
+	return cc
 }
 
 // Must if err is not nil, panic it
@@ -313,10 +342,6 @@ func (c *Container) funcArgs(t reflect.Type) ([]reflect.Value, error) {
 }
 
 func (c *Container) instanceOfType(t reflect.Type) (reflect.Value, error) {
-	if reflect.TypeOf(c).AssignableTo(t) {
-		return reflect.ValueOf(c), nil
-	}
-
 	arg, err := c.Get(t)
 	if err != nil {
 		return reflect.Value{}, ErrArgNotInstanced(err.Error())

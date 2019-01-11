@@ -1,9 +1,11 @@
 package container_test
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/mylxsw/go-toolkit/container"
 )
@@ -39,8 +41,8 @@ var expectedValue = "get user from connection: root:root@/my_db?charset=utf8"
 func TestPrototype(t *testing.T) {
 	c := container.New()
 
-	c.BindValue("conn_str", "root:root@/my_db?charset=utf8")
-	c.Singleton(func(c *container.Container) (*UserRepo, error) {
+	c.MustBindValue("conn_str", "root:root@/my_db?charset=utf8")
+	c.MustSingleton(func(c *container.Container) (*UserRepo, error) {
 		connStr, err := c.Get("conn_str")
 		if err != nil {
 			return nil, err
@@ -48,7 +50,7 @@ func TestPrototype(t *testing.T) {
 
 		return &UserRepo{connStr: connStr.(string)}, nil
 	})
-	c.Prototype(func(userRepo *UserRepo) *UserService {
+	c.MustPrototype(func(userRepo *UserRepo) *UserService {
 		return &UserService{repo: userRepo}
 	})
 
@@ -86,7 +88,7 @@ func TestPrototype(t *testing.T) {
 	}
 
 	{
-		c.Resolve(func(cc *container.Container) {
+		c.MustResolve(func(cc *container.Container) {
 			userService, err := c.Get((*UserService)(nil))
 			if err != nil {
 				t.Error(err)
@@ -102,8 +104,8 @@ func TestPrototype(t *testing.T) {
 
 func TestInterfaceInjection(t *testing.T) {
 	c := container.New()
-	c.BindValue("conn_str", "root:root@/my_db?charset=utf8")
-	c.Singleton(func(c *container.Container) (*UserRepo, error) {
+	c.MustBindValue("conn_str", "root:root@/my_db?charset=utf8")
+	c.MustSingleton(func(c *container.Container) (*UserRepo, error) {
 		connStr, err := c.Get("conn_str")
 		if err != nil {
 			return nil, err
@@ -111,7 +113,7 @@ func TestInterfaceInjection(t *testing.T) {
 
 		return &UserRepo{connStr: connStr.(string)}, nil
 	})
-	c.Prototype(func(userRepo *UserRepo) (*UserService, error) {
+	c.MustPrototype(func(userRepo *UserRepo) (*UserService, error) {
 		return &UserService{repo: userRepo}, nil
 	})
 
@@ -123,7 +125,7 @@ func TestInterfaceInjection(t *testing.T) {
 		t.Errorf("test failed: %s", err)
 	}
 
-	c.Prototype(func() (RoleService, error) {
+	c.MustPrototype(func() (RoleService, error) {
 		return RoleService{}, nil
 	})
 
@@ -135,4 +137,21 @@ func TestInterfaceInjection(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestWithContext(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	c := container.NewWithContext(ctx)
+	c.MustResolve(func(ctx context.Context) {
+		startTime := time.Now().UnixNano()
+		<-ctx.Done()
+
+		if (time.Now().UnixNano()-startTime)/1000/1000 < 100 {
+			t.Error("test failed")
+		}
+	})
+
+	time.Sleep(200 * time.Millisecond)
 }
