@@ -18,9 +18,9 @@ func TestModule(t *testing.T) {
 	log.GetDefaultModule().SetLevel(log.LevelDebug)
 	log.Debug("xxxx")
 
-	log.Module("order").Noticef("order %s created", "1234592")
-	log.Module("order").Infof("order %s created", "1234592")
-	log.Module("order").Debugf("order %s created", "1234592")
+	log.Module("order.test.scheduler").Noticef("order %s created", "1234592")
+	log.Module("order.scheduler.module1.module2").Infof("order %s created", "1234592")
+	log.Module("order.xajckakejcjakjk").Debugf("order %s created", "1234592")
 	log.Module("order").Errorf("order %s created", "1234592")
 	log.Module("order").Emergencyf("order %s created", "1234592")
 	log.Module("order").Warningf("order %s created", "1234592")

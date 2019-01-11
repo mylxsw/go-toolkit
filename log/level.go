@@ -14,6 +14,30 @@ const (
 	LevelDebug     = 100
 )
 
+// GetLevelNameAbbreviation 获取日志级别缩写
+func GetLevelNameAbbreviation(level int) string {
+	switch level {
+	case LevelEmergency:
+		return "EMCY"
+	case LevelAlert:
+		return "ALER"
+	case LevelCritical:
+		return "CRIT"
+	case LevelError:
+		return "EROR"
+	case LevelWarning:
+		return "WARN"
+	case LevelNotice:
+		return "NOTI"
+	case LevelInfo:
+		return "INFO"
+	case LevelDebug:
+		return "DEBG"
+	}
+
+	return "UNON"
+}
+
 // GetLevelName 获取日志级别名称
 func GetLevelName(level int) string {
 	switch level {

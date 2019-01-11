@@ -27,10 +27,15 @@ func (formatter DefaultFormatter) Format(colorful bool, currentTime time.Time, m
 	var message string
 	if colorful {
 
+		if len(moduleName) > 20 {
+			moduleName = "..." + moduleName[len(moduleName) - 17:]
+		}
+
+
 		message = fmt.Sprintf(
-			"[%s] %s.%s: %s %s",
+			"[%s] %-20s %s %s %s",
 			ColorTextWrap(TextLightWhite, currentTime.Format(time.RFC3339)),
-			ColorTextWrap(TextLightGreen, moduleName),
+			moduleName,
 			colorfulLevelName(level),
 			fmt.Sprint(v...),
 			ColorTextWrap(TextLightGrey, formatContext(context)),
@@ -103,7 +108,7 @@ func formatContext(context map[string]interface{}) string {
 }
 
 func colorfulLevelName(level int) string {
-	levelName := GetLevelName(level)
+	levelName := fmt.Sprintf("[%s]", GetLevelNameAbbreviation(level))
 
 	switch level {
 	case LevelDebug:
