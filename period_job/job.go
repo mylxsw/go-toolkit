@@ -1,4 +1,4 @@
-package job
+package period_job
 
 import (
 	"context"

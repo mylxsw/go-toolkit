@@ -1,4 +1,4 @@
-package job_test
+package period_job_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/mylxsw/go-toolkit/container"
-	"github.com/mylxsw/go-toolkit/job"
+	"github.com/mylxsw/go-toolkit/period_job"
 )
 
 type DemoJob struct {
@@ -35,7 +35,7 @@ func TestJob(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	manager := job.NewManager(ctx, cc)
+	manager := period_job.NewManager(ctx, cc)
 
 	job1 := &DemoJob{}
 	job2 := &DemoJob{}
