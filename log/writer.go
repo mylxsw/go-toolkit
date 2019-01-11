@@ -10,6 +10,11 @@ type Writer interface {
 // DefaultWriter 默认日志输出器
 type DefaultWriter struct{}
 
+// NewDefaultWriter create a new default writer
+func NewDefaultWriter() *DefaultWriter {
+	return &DefaultWriter{}
+}
+
 // Write 日志输出
 func (writer DefaultWriter) Write(message string) error {
 	fmt.Println(message)

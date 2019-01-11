@@ -10,15 +10,41 @@ import (
 // Formatter 日志格式化接口
 type Formatter interface {
 	// Format 日志格式化
-	Format(currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string
+	Format(colorful bool, currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string
 }
 
 // DefaultFormatter 默认日志格式化
 type DefaultFormatter struct{}
 
+// NewDefaultFormatter create a new default formatter
+func NewDefaultFormatter() *DefaultFormatter {
+	return &DefaultFormatter{}
+}
+
 // Format 日志格式化
-func (formatter DefaultFormatter) Format(currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
-	message := fmt.Sprintf("[%s] %s.%s: %s %s", currentTime.Format(time.RFC3339), moduleName, GetLevelName(level), fmt.Sprint(v...), formatContext(context))
+func (formatter DefaultFormatter) Format(colorful bool, currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
+
+	var message string
+	if colorful {
+
+		message = fmt.Sprintf(
+			"[%s] %s.%s: %s %s",
+			ColorTextWrap(TextLightWhite, currentTime.Format(time.RFC3339)),
+			ColorTextWrap(TextLightGreen, moduleName),
+			colorfulLevelName(level),
+			fmt.Sprint(v...),
+			ColorTextWrap(TextLightGrey, formatContext(context)),
+		)
+	} else {
+		message = fmt.Sprintf(
+			"[%s] %s.%s: %s %s",
+			currentTime.Format(time.RFC3339),
+			moduleName,
+			GetLevelName(level),
+			fmt.Sprint(v...),
+			formatContext(context),
+		)
+	}
 
 	// 将多行内容增加前缀tab，与第一行内容分开
 	return strings.Trim(strings.Replace(message, "\n", "\n	", -1), "\n	")
@@ -26,6 +52,11 @@ func (formatter DefaultFormatter) Format(currentTime time.Time, moduleName strin
 
 // JSONFormatter json输格式化
 type JSONFormatter struct{}
+
+// NewJSONFormatter create a new json formatter
+func NewJSONFormatter() *JSONFormatter  {
+	return &JSONFormatter{}
+}
 
 type jsonOutput struct {
 	ModuleName string                 `json:"module"`
@@ -37,7 +68,7 @@ type jsonOutput struct {
 }
 
 // Format 日志格式化
-func (formatter JSONFormatter) Format(currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
+func (formatter JSONFormatter) Format(colorful bool, currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
 	datetime := currentTime.Format(time.RFC3339)
 
 	if context == nil {
@@ -53,7 +84,13 @@ func (formatter JSONFormatter) Format(currentTime time.Time, moduleName string, 
 		Context:    context,
 	})
 
-	return fmt.Sprintf("[%s] %s", datetime, string(res))
+	message := string(res)
+	if colorful {
+		datetime = ColorTextWrap(TextLightWhite, datetime)
+		message = ColorTextWrap(TextLightGrey, message)
+	}
+
+	return fmt.Sprintf("[%s] %s", datetime, message)
 }
 
 func formatContext(context map[string]interface{}) string {
@@ -63,4 +100,29 @@ func formatContext(context map[string]interface{}) string {
 
 	contextJSON, _ := json.Marshal(context)
 	return string(contextJSON)
+}
+
+func colorfulLevelName(level int) string {
+	levelName := GetLevelName(level)
+
+	switch level {
+	case LevelDebug:
+		levelName = ColorBackgroundWrap(TextLightWhite, TextLightBlue, levelName)
+	case LevelInfo:
+		levelName = ColorBackgroundWrap(TextWhite, TextLightCyan, levelName)
+	case LevelNotice:
+		levelName = ColorBackgroundWrap(TextLightWhite, TextYellow, levelName)
+	case LevelWarning:
+		levelName = ColorBackgroundWrap(TextRed, TextYellow, levelName)
+	case LevelError:
+		levelName = ColorBackgroundWrap(TextLightWhite, TextRed, levelName)
+	case LevelCritical:
+		levelName = ColorBackgroundWrap(TextLightWhite, TextLightRed, levelName)
+	case LevelAlert:
+		levelName = ColorBackgroundWrap(TextLightWhite, TextLightRed, levelName)
+	case LevelEmergency:
+		levelName = ColorBackgroundWrap(TextLightWhite, TextLightRed, levelName)
+	}
+
+	return levelName
 }

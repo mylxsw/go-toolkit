@@ -13,6 +13,7 @@ type Logger struct {
 	formatter    Formatter
 	writer       Writer
 	timeLocation func() *time.Location
+	colorful     func() bool
 }
 
 var loggers = make(map[string]*Logger)
@@ -24,19 +25,26 @@ type defaultConfig struct {
 	formatter    Formatter
 	writer       Writer
 	timeLocation *time.Location
+	colorful     bool
 }
 
 // 默认配置信息
 var defaultLogConfig = defaultConfig{
 	logLevel:     LevelDebug,
-	formatter:    &DefaultFormatter{},
-	writer:       &DefaultWriter{},
+	formatter:    NewDefaultFormatter(),
+	writer:       NewDefaultWriter(),
 	timeLocation: time.UTC,
+	colorful:     true,
 }
 
 // SetDefaultLocation set default time location
 func SetDefaultLocation(loc *time.Location) {
 	defaultLogConfig.timeLocation = loc
+}
+
+// SetDefaultColorful set default colorful property
+func SetDefaultColorful(colorful bool) {
+	defaultLogConfig.colorful = colorful
 }
 
 // SetDefaultLevel 设置全局默认日志输出级别
@@ -69,6 +77,9 @@ func Module(moduleName string) *Logger {
 		timeLocation: func() *time.Location {
 			return defaultLogConfig.timeLocation
 		},
+		colorful: func() bool {
+			return defaultLogConfig.colorful
+		},
 	}
 
 	loggers[moduleName] = logger
@@ -83,8 +94,15 @@ func (module *Logger) SetTimeLocation(loc *time.Location) {
 	}
 }
 
+// SetColorful set colorful property
+func (module *Logger) SetColorful(colorful bool) {
+	module.colorful = func() bool {
+		return colorful
+	}
+}
+
 func (module *Logger) output(level int, context map[string]interface{}, v ...interface{}) string {
-	message := module.getFormatter().Format(time.Now().In(module.timeLocation()), module.moduleName, level, context, v...)
+	message := module.getFormatter().Format(module.colorful(), time.Now().In(module.timeLocation()), module.moduleName, level, context, v...)
 	// 低于设定日志级别的日志不会输出
 	if level >= module.level {
 		if err := module.getWriter().Write(message); err != nil {
