@@ -27,12 +27,16 @@ func Extract(rows *sql.Rows) (*Rows, error) {
 		return nil, err
 	}
 
-	columns := collection.MustNew(types).Map(func(t *sql.ColumnType) Column {
+	columns := make([]Column, len(types))
+	for i, col := range collection.MustNew(types).Map(func(t *sql.ColumnType) Column {
 		return Column{
 			Name: t.Name(),
 			Type: t.DatabaseTypeName(),
 		}
-	}).All().([]Column)
+	}).All().([]interface{}) {
+		columns[i] = col.(Column)
+	}
+
 
 	dataSets := make([][]interface{}, 0)
 
