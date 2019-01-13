@@ -27,16 +27,15 @@ func Extract(rows *sql.Rows) (*Rows, error) {
 		return nil, err
 	}
 
-	columns := make([]Column, len(types))
-	for i, col := range collection.MustNew(types).Map(func(t *sql.ColumnType) Column {
+	var columns []Column
+	if err := collection.MustNew(types).Map(func(t *sql.ColumnType) Column {
 		return Column{
 			Name: t.Name(),
 			Type: t.DatabaseTypeName(),
 		}
-	}).All().([]interface{}) {
-		columns[i] = col.(Column)
+	}).All(&columns); err != nil {
+		return nil, err
 	}
-
 
 	dataSets := make([][]interface{}, 0)
 
@@ -45,7 +44,7 @@ func Extract(rows *sql.Rows) (*Rows, error) {
 			Map(func(t *sql.ColumnType) interface{} {
 				var tt interface{}
 				return &tt
-			}).All().([]interface{})
+			}).Items().([]interface{})
 
 		if err := rows.Scan(data...); err != nil {
 			return nil, err
@@ -60,7 +59,7 @@ func Extract(rows *sql.Rows) (*Rows, error) {
 			}
 
 			return res
-		}).All().([]interface{}))
+		}).Items().([]interface{}))
 	}
 
 	res := Rows{
