@@ -2,9 +2,13 @@ package web
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/mylxsw/go-toolkit/container"
+	"github.com/mylxsw/go-toolkit/log"
 )
+
+var logger = log.Module("toolkit.web")
 
 // HandlerDecorator 该函数是http handler的装饰器
 type HandlerDecorator func(WebHandler) WebHandler
@@ -43,4 +47,38 @@ func (f handleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	callback(context)
+}
+
+// RequestMiddleware is a middleware collections
+type RequestMiddleware struct{}
+
+// NewRequestMiddleware create a new RequestMiddleware
+func NewRequestMiddleware() RequestMiddleware {
+	return RequestMiddleware{}
+}
+
+// AccessLog create a access log middleware
+func (rm RequestMiddleware) AccessLog() HandlerDecorator {
+	return func(handler WebHandler) WebHandler {
+		return func(ctx *WebContext) HTTPResponse {
+			defer func(startTime time.Time) {
+				logger.Debugf("%-10s: %s [%.fms]", ctx.Request.Method(), ctx.Request.HTTPRequest().URL.String(), time.Now().Sub(startTime).Seconds()*1000)
+			}(time.Now())
+
+			return handler(ctx)
+		}
+	}
+}
+
+// CORS create a CORS middleware
+func (rm RequestMiddleware) CORS(origin string) HandlerDecorator {
+	return func(handler WebHandler) WebHandler {
+		return func(ctx *WebContext) HTTPResponse {
+			ctx.Response.Header("Access-Control-Allow-Origin", origin)
+			ctx.Response.Header("Access-Control-Allow-Headers", "X-Requested-With")
+			ctx.Response.Header("Access-Control-Allow-Methods", "GET,POST,OPTIONS,HEAD,PUT,PATCH,DELETE")
+
+			return handler(ctx)
+		}
+	}
 }
