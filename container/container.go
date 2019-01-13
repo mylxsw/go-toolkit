@@ -7,6 +7,20 @@ import (
 	"sync"
 )
 
+// ResolveError is a error when container can not resolve a object
+type ResolveError struct {
+	err error
+}
+
+func newResolveError(err error) ResolveError {
+	return ResolveError{err: err}
+}
+
+// Error return the error string
+func (re ResolveError) Error() string {
+	return re.err.Error()
+}
+
 // Entity represent a entity in container
 type Entity struct {
 	lock sync.RWMutex
@@ -244,6 +258,23 @@ func (c *Container) Resolve(callback interface{}) error {
 // MustResolve inject args for func by callback
 func (c *Container) MustResolve(callback interface{}) {
 	c.Must(c.Resolve(callback))
+}
+
+// ResolveWithError inject args for func by callback
+// callback func(...) error
+func (c *Container) ResolveWithError(callback interface{}) error {
+	results, err := c.Call(callback)
+	if err != nil {
+		return newResolveError(err)
+	}
+
+	if len(results) == 1 && results[0] != nil {
+		if err, ok := results[0].(error); ok {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Call call a callback function and return it's results
