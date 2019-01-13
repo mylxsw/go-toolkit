@@ -21,6 +21,23 @@ const (
 	DataTypeArrayOrSlice
 )
 
+// InvalidTypeError describes an invalid argument passed to To.
+// (The argument to To must be a non-nil pointer.)
+type InvalidTypeError struct {
+	Type reflect.Type
+}
+
+func (e *InvalidTypeError) Error() string {
+	if e.Type == nil {
+		return "collection: To(nil)"
+	}
+
+	if e.Type.Kind() != reflect.Ptr {
+		return "collection: To(non-pointer " + e.Type.String() + ")"
+	}
+	return "collection: To(nil " + e.Type.String() + ")"
+}
+
 // Collection is a data collection
 type Collection struct {
 	dataArray []interface{}
@@ -172,12 +189,64 @@ func (collection *Collection) Reduce(reduceFunc interface{}, initial interface{}
 	return previous
 }
 
-// All Get all of the items in the collection.
-func (collection *Collection) All() interface{} {
+// Items return all items in the collection
+func (collection *Collection) Items() interface{} {
 	if collection.isMapType() {
 		return collection.dataMap
 	}
+
 	return collection.dataArray
+}
+
+// All get all of the items in the collection.
+// the argument result must be a pointer to map or slice
+func (collection *Collection) All(result interface{}) (err error) {
+	defer func() {
+		if err2 := recover(); err2 != nil {
+			err = fmt.Errorf("%v", err2)
+		}
+	}()
+
+	if collection.isMapType() {
+		return collection.toMap(result)
+	}
+
+	return collection.toArray(result)
+}
+
+func (collection *Collection) toMap(result interface{}) error {
+	resultv := reflect.ValueOf(result)
+	if resultv.Kind() != reflect.Ptr {
+		return fmt.Errorf("result argument must be a slice address")
+	}
+
+	mapv := reflect.MakeMap(resultv.Elem().Type())
+
+	for k, v := range collection.dataMap {
+		mapv.SetMapIndex(reflect.ValueOf(k), reflect.ValueOf(v))
+	}
+
+	resultv.Elem().Set(mapv)
+
+	return nil
+}
+
+func (collection *Collection) toArray(result interface{}) error {
+	resultv := reflect.ValueOf(result)
+	if resultv.Kind() != reflect.Ptr {
+		return fmt.Errorf("result argument must be a slice address")
+	}
+
+	elementLen := len(collection.dataArray)
+	slicev := reflect.MakeSlice(resultv.Elem().Type(), elementLen, elementLen)
+
+	for i, v := range collection.dataArray {
+		slicev.Index(i).Set(reflect.ValueOf(v))
+	}
+
+	resultv.Elem().Set(slicev)
+
+	return nil
 }
 
 // Each Execute a callback over each item.

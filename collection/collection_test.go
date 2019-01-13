@@ -2,6 +2,7 @@ package collection_test
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -48,14 +49,6 @@ func TestInvalidTypeForMap(t *testing.T) {
 		t.Error("test failed")
 	}
 
-	if _, ok := collectionWithoutEmpty.All().(map[interface{}]interface{}); !ok {
-		t.Error("test failed")
-	}
-
-	if _, ok := cc.All().([]string); ok {
-		t.Error("test failed")
-	}
-
 	if cc.IsEmpty() {
 		t.Error("test failed")
 	}
@@ -73,40 +66,36 @@ func TestInvalidTypeForArray(t *testing.T) {
 		t.Errorf("test failed")
 	}
 
-	// collection := MustNew([]string{"hello", "world", "", "you", "are"})
-	// fmt.Println(collection.Filter2(func(item string) bool {
+	// coll := MustNew([]string{"hello", "world", "", "you", "are"})
+	// fmt.Println(coll.Filter2(func(item string) bool {
 	// 	return item != ""
 	// }).ToString())
 
-	collection := collection.MustNew([]string{"hello", "world", "", "you", "are"}).Filter(func(item string) bool {
+	coll := collection.MustNew([]string{"hello", "world", "", "you", "are"}).Filter(func(item string) bool {
 		return item != ""
 	})
 
-	if collection.Size() != 4 {
+	if coll.Size() != 4 {
 		t.Error("test failed")
 	}
 
-	if fmt.Sprint(collection.All()) != "[hello world you are]" {
-		t.Errorf("test failed")
-	}
-
-	collection.Each(func(item string, index int) {
+	coll.Each(func(item string, index int) {
 		if item == "" || index < 0 {
 			t.Errorf("test failed: %d:%s", index, item)
 		}
 	})
 
-	collection.Each(func(item string) {
+	coll.Each(func(item string) {
 		if item == "" {
 			t.Errorf("test failed: %s", item)
 		}
 	})
 
-	if collection.IsEmpty() {
+	if coll.IsEmpty() {
 		t.Error("test failed")
 	}
 
-	if !collection.Filter(func(item string) bool {
+	if !coll.Filter(func(item string) bool {
 		return false
 	}).IsEmpty() {
 		t.Error("test failed")
@@ -114,8 +103,8 @@ func TestInvalidTypeForArray(t *testing.T) {
 }
 
 func TestStringMapCollection(t *testing.T) {
-	collection := collection.MustNew(testMapData)
-	collection = collection.Filter(func(_, key string) bool {
+	coll := collection.MustNew(testMapData)
+	coll = coll.Filter(func(_, key string) bool {
 		return key != ""
 	}).Filter(func(value string) bool {
 		return value != ""
@@ -123,24 +112,24 @@ func TestStringMapCollection(t *testing.T) {
 		return fmt.Sprintf("<%s(%s)>", value, key)
 	})
 
-	collection.Each(func(value, key string) {
+	coll.Each(func(value, key string) {
 		if !regexp.MustCompile(fmt.Sprintf(`^<\w+\(%s\)>$`, key)).MatchString(value) {
 			t.Error("test failed")
 		}
 	})
 
-	joinedValue := collection.Reduce(func(carry string, value, key string) string {
-		if collection.MapIndex(key).(string) != value {
+	joinedValue := coll.Reduce(func(carry string, value, key string) string {
+		if coll.MapIndex(key).(string) != value {
 			t.Error("test failed")
 		}
-		return carry + " " + collection.MapIndex(key).(string)
+		return carry + " " + coll.MapIndex(key).(string)
 	}, "value: ").(string)
 
 	if len(joinedValue) <= len("value: ") {
 		t.Error("test failed")
 	}
 
-	collection.Map(func(value string, key string) (string, string) {
+	coll.Map(func(value string, key string) (string, string) {
 		return value, key + "(modified)"
 	}).Each(func(_, key string) {
 		if !strings.HasSuffix(key, "(modified)") {
@@ -150,18 +139,18 @@ func TestStringMapCollection(t *testing.T) {
 }
 
 func TestStringCollection(t *testing.T) {
-	collection := collection.MustNew([]interface{}{"hello", "world", "", "you", "are"})
-	collection = collection.Filter(func(item string) bool {
+	coll := collection.MustNew([]interface{}{"hello", "world", "", "you", "are"})
+	coll = coll.Filter(func(item string) bool {
 		return item != ""
 	}).Map(func(item string) string {
 		return "<" + item + ">"
 	})
 
-	if collection.ToString() != "[<hello> <world> <you> <are>]" {
-		t.Errorf("test failed: ^%s$", collection.ToString())
+	if coll.ToString() != "[<hello> <world> <you> <are>]" {
+		t.Errorf("test failed: ^%s$", coll.ToString())
 	}
 
-	res := collection.Reduce(func(carry string, item string) string {
+	res := coll.Reduce(func(carry string, item string) string {
 		return fmt.Sprintf("%s->%s", carry, item)
 	}, "")
 
@@ -178,8 +167,8 @@ func TestComplexMapCollection(t *testing.T) {
 		"four":  {ID: 4, Name: "Tom"},
 	}
 
-	collection := collection.MustNew(elements)
-	collection = collection.Filter(func(value Element, key string) bool {
+	coll := collection.MustNew(elements)
+	coll = coll.Filter(func(value Element, key string) bool {
 		return value.Name != ""
 	}).Map(func(value Element) Element2 {
 		return Element2{
@@ -189,19 +178,19 @@ func TestComplexMapCollection(t *testing.T) {
 		}
 	})
 
-	if collection.Size() != 3 {
+	if coll.Size() != 3 {
 		t.Errorf("test failed")
 	}
 
-	if !collection.MapHasIndex("one") {
+	if !coll.MapHasIndex("one") {
 		t.Error("test failed")
 	}
 
-	if collection.MapHasIndex("three") {
+	if coll.MapHasIndex("three") {
 		t.Error("test failed")
 	}
 
-	collection.Each(func(value Element2, key string) {
+	coll.Each(func(value Element2, key string) {
 		if key == "" {
 			t.Error("test failed")
 		}
@@ -217,8 +206,8 @@ func TestComplexCollection(t *testing.T) {
 		{ID: 4, Name: "Tom"},
 	}
 
-	collection := collection.MustNew(elements)
-	collection = collection.Filter(func(item Element) bool {
+	coll := collection.MustNew(elements)
+	coll = coll.Filter(func(item Element) bool {
 		return item.Name != ""
 	}).Map(func(item Element) Element2 {
 		return Element2{
@@ -228,11 +217,11 @@ func TestComplexCollection(t *testing.T) {
 		}
 	})
 
-	if collection.ToString() != "[{1 hello 2} {2 world 4} {4 Tom 8}]" {
-		t.Errorf("test failed: ^%s$", collection.ToString())
+	if coll.ToString() != "[{1 hello 2} {2 world 4} {4 Tom 8}]" {
+		t.Errorf("test failed: ^%s$", coll.ToString())
 	}
 
-	res := collection.Reduce(func(carry string, item Element2) string {
+	res := coll.Reduce(func(carry string, item Element2) string {
 		return fmt.Sprintf("%v\n%v", carry, item)
 	}, "{0 Start}")
 
@@ -243,5 +232,133 @@ func TestComplexCollection(t *testing.T) {
 
 	if res != expectValue {
 		t.Errorf("test failed: ^%s$", res)
+	}
+}
+
+func TestToArray(t *testing.T) {
+	col := collection.MustNew([]Element{
+		{ID: 11, Name: "guan"},
+		{ID: 12, Name: "yi"},
+		{ID: 13, Name: "yao"},
+	})
+
+	var elements []Element
+	if err := col.All(&elements); err != nil {
+		t.Errorf("test failed: %s", err)
+	}
+
+	for _, v := range elements {
+		fmt.Printf("type=%s, id=%d, name=%s\n", reflect.TypeOf(v).Name(), v.ID, v.Name)
+	}
+
+	var element2s []Element2
+	if err := col.Map(func(ele Element) Element2 {
+		return Element2{
+			ID:   ele.ID,
+			Name: ele.Name,
+			Age:  ele.ID * 10,
+		}
+	}).All(&element2s); err != nil {
+		t.Errorf("test failed: %s", err)
+	}
+
+	for _, v := range element2s {
+		fmt.Printf("type=%s, id=%d, name=%s, age=%d\n", reflect.TypeOf(v).Name(), v.ID, v.Name, v.Age)
+	}
+}
+
+func TestToMap(t *testing.T) {
+	col := collection.MustNew(map[string]Element{
+		"guan": {ID: 11, Name: "guan"},
+		"yi":   {ID: 12, Name: "yi"},
+		"yao":  {ID: 13, Name: "yao"},
+	})
+
+	var elements map[string]Element
+	if err := col.All(&elements); err != nil {
+		t.Errorf("test failed: %s", err)
+	}
+
+	for k, v := range elements {
+		fmt.Printf("type=%s, k=%s, id=%d, name=%s\n", reflect.TypeOf(v).Name(), k, v.ID, v.Name)
+	}
+
+	var element2s map[string]Element2
+	if err := col.Map(func(ele Element) Element2 {
+		return Element2{
+			ID:   ele.ID,
+			Name: ele.Name,
+			Age:  ele.ID * 10,
+		}
+	}).All(&element2s); err != nil {
+		t.Errorf("test failed: %s", err)
+	}
+
+	for k, v := range element2s {
+		fmt.Printf("type=%s, k=%s, id=%d, name=%s, age=%d\n", reflect.TypeOf(v).Name(), k, v.ID, v.Name, v.Age)
+	}
+}
+
+func TestPointerToArray(t *testing.T) {
+	col := collection.MustNew([]*Element{
+		{ID: 11, Name: "guan"},
+		{ID: 12, Name: "yi"},
+		{ID: 13, Name: "yao"},
+	})
+
+	var elements []*Element
+	if err := col.All(&elements); err != nil {
+		t.Errorf("test failed: %s", err)
+	}
+
+	for _, v := range elements {
+		fmt.Printf("type=%s, id=%d, name=%s\n", reflect.TypeOf(v).Kind(), v.ID, v.Name)
+	}
+
+	var element2s []*Element2
+	if err := col.Map(func(ele *Element) *Element2 {
+		return &Element2{
+			ID:   ele.ID,
+			Name: ele.Name,
+			Age:  ele.ID * 10,
+		}
+	}).All(&element2s); err != nil {
+		t.Errorf("test failed: %s", err)
+	}
+
+	for _, v := range element2s {
+		fmt.Printf("type=%s, id=%d, name=%s, age=%d\n", reflect.TypeOf(v).Kind(), v.ID, v.Name, v.Age)
+	}
+}
+
+func TestPointerToMap(t *testing.T) {
+	col := collection.MustNew(map[string]*Element{
+		"guan": {ID: 11, Name: "guan"},
+		"yi":   {ID: 12, Name: "yi"},
+		"yao":  {ID: 13, Name: "yao"},
+	})
+
+	var elements map[string]*Element
+	if err := col.All(&elements); err != nil {
+		t.Errorf("test failed: %s", err)
+	}
+
+	for k, v := range elements {
+		fmt.Printf("type=%s, k=%s, id=%d, name=%s\n", reflect.TypeOf(v).Kind(), k, v.ID, v.Name)
+	}
+
+	var element2s map[string]*Element2
+	if err := col.Map(func(ele *Element) *Element2 {
+		return &Element2{
+			ID:   ele.ID,
+			Name: ele.Name,
+			Age:  ele.ID * 10,
+		}
+	}).All(&element2s); err != nil {
+		t.Errorf("test failed: %s", err)
+	}
+
+	for k, v := range element2s {
+		fmt.Printf("type=%s, k=%s, id=%d, name=%s, age=%d\n", reflect.TypeOf(v).Kind(), k, v.ID, v.Name, v.Age)
 	}
 }
