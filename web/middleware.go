@@ -62,7 +62,7 @@ func (rm RequestMiddleware) AccessLog() HandlerDecorator {
 	return func(handler WebHandler) WebHandler {
 		return func(ctx *WebContext) HTTPResponse {
 			defer func(startTime time.Time) {
-				logger.Debugf("%-10s: %s [%.fms]", ctx.Request.Method(), ctx.Request.HTTPRequest().URL.String(), time.Now().Sub(startTime).Seconds()*1000)
+				logger.Debugf("%-8s %s [%.fms]", ctx.Request.Method(), ctx.Request.HTTPRequest().URL.String(), time.Now().Sub(startTime).Seconds()*1000)
 			}(time.Now())
 
 			return handler(ctx)
