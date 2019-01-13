@@ -66,3 +66,6 @@ func (resp *Response) SendError(code int, message string) {
 	resp.w.WriteHeader(code)
 	_, _ = resp.w.Write([]byte(message))
 }
+
+// M represents a kv response items
+type M map[string]interface{}
