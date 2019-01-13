@@ -48,45 +48,75 @@ func (h webHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp := h.handle(context)
 	if resp != nil {
-		resp.CreateResponse()
+		_ = resp.CreateResponse()
 	}
 }
 
-// NewJSONResponse 创建一个JSONResponse对象
-func (ctx *WebContext) NewJSONResponse(res interface{}) JSONResponse {
-	return NewJSONResponse(ctx.Response, res)
+// JSON is a shortcut for NewJSONResponse func
+func (ctx *WebContext) JSON(res interface{}) *JSONResponse {
+	return ctx.NewJSONResponse(res)
 }
 
-// NewAPIResponse 创建一个API响应
-func (ctx *WebContext) NewAPIResponse(code string, message string, data interface{}) JSONResponse {
+// NewJSONResponse create a new JSONResponse with the http status code equal 200
+func (ctx *WebContext) NewJSONResponse(res interface{}) *JSONResponse {
+	return NewJSONResponse(ctx.Response, http.StatusOK, res)
+}
+
+// JSONWithCode create a json response with a http status code
+func (ctx *WebContext) JSONWithCode(res interface{}, code int) *JSONResponse {
+	return NewJSONResponse(ctx.Response, code, res)
+}
+
+// API is a shortcut for NewAPIResponse func
+func (ctx *WebContext) API(businessCode string, message string, data interface{}) *JSONResponse {
+	return ctx.NewAPIResponse(businessCode, message, data)
+}
+
+// NewAPIResponse create a new APIResponse
+func (ctx *WebContext) NewAPIResponse(businessCode string, message string, data interface{}) *JSONResponse {
 	return ctx.NewJSONResponse(struct {
 		Code    string      `json:"code"`
 		Message string      `json:"message"`
 		Data    interface{} `json:"data"`
 	}{
-		Code:    code,
+		Code:    businessCode,
 		Message: message,
 		Data:    data,
 	})
 }
 
 // NewRawResponse create a new RawResponse
-func (ctx *WebContext) NewRawResponse() RawResponse {
+func (ctx *WebContext) NewRawResponse() *RawResponse {
 	return NewRawResponse(ctx.Response)
 }
 
-// NewHTMLResponse 创建一个HTML响应
-func (ctx *WebContext) NewHTMLResponse(res string) HTMLResponse {
-	return NewHTMLResponse(ctx.Response, res)
+// NewHTMLResponse create a new HTMLResponse
+func (ctx *WebContext) NewHTMLResponse(res string) *HTMLResponse {
+	return NewHTMLResponse(ctx.Response, http.StatusOK, res)
+}
+
+// HTML is a shortcut for NewHTMLResponse func
+func (ctx *WebContext) HTML(res string) *HTMLResponse {
+	return ctx.NewHTMLResponse(res)
+}
+
+// HTMLWithCode create a HTMLResponse with http status code
+func (ctx *WebContext) HTMLWithCode(res string, code int) *HTMLResponse {
+	return NewHTMLResponse(ctx.Response, code, res)
+}
+
+// Error is a shortcut for NewErrorResponse func
+func (ctx *WebContext) Error(res string, code int) *ErrorResponse {
+	return ctx.NewErrorResponse(res, code)
 }
 
 // NewErrorResponse create a error response
-func (ctx *WebContext) NewErrorResponse(res string, code int) ErrorResponse {
+func (ctx *WebContext) NewErrorResponse(res string, code int) *ErrorResponse {
 	return NewErrorResponse(ctx.Response, res, code)
 }
 
-// Redirect 页面跳转
-func (ctx *WebContext) Redirect(location string, code int) RedirectResponse {
+// Redirect replies to the request with a redirect to url
+func (ctx *WebContext) Redirect(location string, code int) *RedirectResponse {
 	return NewRedirectResponse(ctx.Response, ctx.Request, location, code)
 }
 
