@@ -87,3 +87,17 @@ func (rm RequestMiddleware) CORS(origin string) HandlerDecorator {
 		}
 	}
 }
+
+// ExceptionHandler create a Exception handler middleware
+func (rm RequestMiddleware) ExceptionHandler() HandlerDecorator {
+	return func(handler WebHandler) WebHandler {
+		return func(ctx *WebContext) (resp HTTPResponse) {
+			if err := recover(); err != nil {
+				logger.Errorf("request failed %s", err)
+				resp = ctx.Error("Internal Server Error", http.StatusInternalServerError)
+			}
+
+			return handler(ctx)
+		}
+	}
+}
