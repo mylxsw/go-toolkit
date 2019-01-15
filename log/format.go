@@ -34,7 +34,7 @@ func (formatter DefaultFormatter) Format(colorful bool, currentTime time.Time, m
 
 		message = fmt.Sprintf(
 			"[%s] %-20s %s %s %s",
-			ColorTextWrap(TextLightWhite, currentTime.Format(time.RFC3339)),
+			currentTime.Format(time.RFC3339),
 			moduleName,
 			colorfulLevelName(level),
 			strings.Trim(fmt.Sprint(v...), "\n"),
@@ -90,10 +90,10 @@ func (formatter JSONFormatter) Format(colorful bool, currentTime time.Time, modu
 	})
 
 	message := string(res)
-	if colorful {
-		datetime = ColorTextWrap(TextLightWhite, datetime)
-		message = ColorTextWrap(TextLightGrey, message)
-	}
+	// if colorful {
+	// 	datetime = ColorTextWrap(TextLightWhite, datetime)
+	// 	message = ColorTextWrap(TextLightGrey, message)
+	// }
 
 	return fmt.Sprintf("[%s] %s", datetime, message)
 }
