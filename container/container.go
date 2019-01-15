@@ -390,7 +390,7 @@ func ErrObjectNotFound(msg string) error {
 	return fmt.Errorf("the object can not be found in container: %s", msg)
 }
 
-// ErrArgNotInstanced is an erorr object represent arg not instanced
+// ErrArgNotInstanced is an error object represent arg not instanced
 func ErrArgNotInstanced(msg string) error {
 	return fmt.Errorf("the arg can not be found in container: %s", msg)
 }
