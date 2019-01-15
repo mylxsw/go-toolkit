@@ -9,7 +9,7 @@ import (
 // Logger 日志对象
 type Logger struct {
 	moduleName   string
-	level        int
+	level        func() int
 	formatter    Formatter
 	writer       Writer
 	timeLocation func() *time.Location
@@ -73,7 +73,9 @@ func Module(moduleName string) *Logger {
 
 	logger := &Logger{
 		moduleName: moduleName,
-		level:      defaultLogConfig.logLevel,
+		level: func() int {
+			return defaultLogConfig.logLevel
+		},
 		timeLocation: func() *time.Location {
 			return defaultLogConfig.timeLocation
 		},
@@ -104,7 +106,7 @@ func (module *Logger) SetColorful(colorful bool) {
 func (module *Logger) output(level int, context map[string]interface{}, v ...interface{}) string {
 	message := module.getFormatter().Format(module.colorful(), time.Now().In(module.timeLocation()), module.moduleName, level, context, v...)
 	// 低于设定日志级别的日志不会输出
-	if level >= module.level {
+	if level >= module.level() {
 		if err := module.getWriter().Write(message); err != nil {
 			fmt.Printf("can not write to output: %s", err)
 		}
@@ -120,7 +122,9 @@ func GetDefaultModule() *Logger {
 
 // SetLevel 设置日志输出级别
 func (module *Logger) SetLevel(level int) *Logger {
-	module.level = level
+	module.level = func() int {
+		return level
+	}
 
 	return module
 }
