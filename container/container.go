@@ -36,16 +36,16 @@ type Entity struct {
 }
 
 // Value instance value if not initialized
-func (e *Entity) Value() (interface{}, error) {
+func (e *Entity) Value(provider func() []*Entity) (interface{}, error) {
 	if e.prototype {
-		return e.createValue()
+		return e.createValue(provider)
 	}
 
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
 	if e.value == nil {
-		val, err := e.createValue()
+		val, err := e.createValue(provider)
 		if err != nil {
 			return nil, err
 		}
@@ -56,9 +56,9 @@ func (e *Entity) Value() (interface{}, error) {
 	return e.value, nil
 }
 
-func (e *Entity) createValue() (interface{}, error) {
+func (e *Entity) createValue(provider func() []*Entity) (interface{}, error) {
 	initializeValue := reflect.ValueOf(e.initializeFunc)
-	argValues, err := e.c.funcArgs(initializeValue.Type())
+	argValues, err := e.c.funcArgs(initializeValue.Type(), provider)
 	if err != nil {
 		return nil, err
 	}
@@ -207,6 +207,51 @@ func (c *Container) MustBindValue(key interface{}, value interface{}) {
 	c.Must(c.BindValue(key, value))
 }
 
+// ServiceProvider create a provider from initializes
+func (c *Container) ServiceProvider(initializes ...interface{}) (func() []*Entity, error) {
+	entities := make([]*Entity, len(initializes))
+	for i, init := range initializes {
+		entity, err := c.NewEntity(init, false)
+		if err != nil {
+			return nil, err
+		}
+
+		entities[i] = entity
+	}
+
+	return func() []*Entity {
+		return entities
+	}, nil
+}
+
+// NewEntity create a new entity
+func (c *Container) NewEntity(initialize interface{}, prototype bool) (*Entity, error) {
+	if !reflect.ValueOf(initialize).IsValid() {
+		return nil, ErrInvalidArgs("initialize is nil")
+	}
+
+	initializeType := reflect.ValueOf(initialize).Type()
+	if initializeType.NumOut() <= 0 {
+		return nil, ErrInvalidArgs("expect func return values count greater than 0, but got 0")
+	}
+
+	typ := initializeType.Out(0)
+	return c.newEntity(typ, typ, initialize, prototype), nil
+}
+
+func (c *Container) newEntity(key interface{}, typ reflect.Type, initialize interface{}, prototype bool) *Entity {
+	entity := Entity{
+		initializeFunc: initialize,
+		key:            key,
+		typ:            typ,
+		value:          nil,
+		c:              c,
+		prototype:      prototype,
+	}
+
+	return &entity
+}
+
 // Bind bind a initialize for object
 // initialize func(...) (value, error)
 func (c *Container) Bind(initialize interface{}, prototype bool) error {
@@ -277,14 +322,14 @@ func (c *Container) ResolveWithError(callback interface{}) error {
 	return nil
 }
 
-// Call call a callback function and return it's results
-func (c *Container) Call(callback interface{}) ([]interface{}, error) {
+// CallWithProvider execute the callback with extra service provider
+func (c *Container) CallWithProvider(callback interface{}, provider func() []*Entity) ([]interface{}, error) {
 	callbackValue := reflect.ValueOf(callback)
 	if !callbackValue.IsValid() {
 		return nil, ErrInvalidArgs("callback is nil")
 	}
 
-	args, err := c.funcArgs(callbackValue.Type())
+	args, err := c.funcArgs(callbackValue.Type(), provider)
 	if err != nil {
 		return nil, err
 	}
@@ -298,8 +343,21 @@ func (c *Container) Call(callback interface{}) ([]interface{}, error) {
 	return results, nil
 }
 
+// Call call a callback function and return it's results
+func (c *Container) Call(callback interface{}) ([]interface{}, error) {
+	return c.CallWithProvider(callback, func() []*Entity {
+		return make([]*Entity, 0)
+	})
+}
+
 // Get get instance by key from container
 func (c *Container) Get(key interface{}) (interface{}, error) {
+	return c.get(key, func() []*Entity {
+		return make([]*Entity, 0)
+	})
+}
+
+func (c *Container) get(key interface{}, provider func() []*Entity) (interface{}, error) {
 	keyReflectType, ok := key.(reflect.Type)
 	if !ok {
 		keyReflectType = reflect.TypeOf(key)
@@ -308,14 +366,25 @@ func (c *Container) Get(key interface{}) (interface{}, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	for _, obj := range c.objectSlices {
+	for _, obj := range provider() {
 
 		if obj.key == key || obj.key == keyReflectType {
-			return obj.Value()
+			return obj.Value(provider)
 		}
 
 		if obj.typ.AssignableTo(keyReflectType) {
-			return obj.Value()
+			return obj.Value(provider)
+		}
+	}
+
+	for _, obj := range c.objectSlices {
+
+		if obj.key == key || obj.key == keyReflectType {
+			return obj.Value(provider)
+		}
+
+		if obj.typ.AssignableTo(keyReflectType) {
+			return obj.Value(provider)
 		}
 	}
 
@@ -340,28 +409,21 @@ func (c *Container) bindWith(key interface{}, typ reflect.Type, initialize inter
 		return ErrRepeatedBind("key repeated")
 	}
 
-	entity := Entity{
-		initializeFunc: initialize,
-		key:            key,
-		typ:            typ,
-		value:          nil,
-		index:          len(c.objectSlices),
-		c:              c,
-		prototype:      prototype,
-	}
+	entity := c.newEntity(key, typ, initialize, prototype)
+	entity.index = len(c.objectSlices)
 
-	c.objects[key] = &entity
-	c.objectSlices = append(c.objectSlices, &entity)
+	c.objects[key] = entity
+	c.objectSlices = append(c.objectSlices, entity)
 
 	return nil
 }
 
-func (c *Container) funcArgs(t reflect.Type) ([]reflect.Value, error) {
+func (c *Container) funcArgs(t reflect.Type, provider func() []*Entity) ([]reflect.Value, error) {
 	argsSize := t.NumIn()
 	argValues := make([]reflect.Value, argsSize)
 	for i := 0; i < argsSize; i++ {
 		argType := t.In(i)
-		val, err := c.instanceOfType(argType)
+		val, err := c.instanceOfType(argType, provider)
 		if err != nil {
 			return argValues, err
 		}
@@ -372,8 +434,8 @@ func (c *Container) funcArgs(t reflect.Type) ([]reflect.Value, error) {
 	return argValues, nil
 }
 
-func (c *Container) instanceOfType(t reflect.Type) (reflect.Value, error) {
-	arg, err := c.Get(t)
+func (c *Container) instanceOfType(t reflect.Type, provider func() []*Entity) (reflect.Value, error) {
+	arg, err := c.get(t, provider)
 	if err != nil {
 		return reflect.Value{}, ErrArgNotInstanced(err.Error())
 	}

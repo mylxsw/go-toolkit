@@ -155,3 +155,42 @@ func TestWithContext(t *testing.T) {
 
 	time.Sleep(200 * time.Millisecond)
 }
+
+type TestObject struct {
+	Name string
+}
+
+func TestWithProvider(t *testing.T) {
+	c := container.New()
+	c.MustBindValue("conn_str", "root:root@/my_db?charset=utf8")
+	c.MustSingleton(func(c *container.Container) (*UserRepo, error) {
+		connStr, err := c.Get("conn_str")
+		if err != nil {
+			return nil, err
+		}
+
+		return &UserRepo{connStr: connStr.(string)}, nil
+	})
+	c.MustPrototype(func(userRepo *UserRepo) *UserService {
+		return &UserService{repo: userRepo}
+	})
+
+	provider, err := c.ServiceProvider(func() *TestObject {
+		return &TestObject{Name: "mylxsw"}
+	})
+	if err != nil {
+		t.Error("test failed")
+	}
+	if _, err := c.CallWithProvider(func(userService *UserService, testObject *TestObject) {
+		if userService.GetUser() != expectedValue {
+			t.Error("test failed")
+		}
+
+		if testObject.Name != "mylxsw" {
+			t.Error("test failed")
+		}
+	}, provider); err != nil {
+		t.Errorf("test failed: %s", err)
+		return
+	}
+}

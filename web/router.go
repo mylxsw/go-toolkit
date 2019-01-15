@@ -23,15 +23,8 @@ type route struct {
 	method      string
 	path        string
 	webHandler  WebHandler
-	handler     http.Handler
-	handlerType int // 1-WebHandler 2-http.Handler
 	middlewares []HandlerDecorator
 }
-
-const (
-	handlerTypeWebHandler = iota
-	handlerTypeHTTPHandler
-)
 
 // NewRouter 创建一个路由器
 func NewRouter(middlewares ...HandlerDecorator) *Router {
@@ -63,11 +56,7 @@ func (router *Router) Group(prefix string, f func(rou *Router), decors ...Handle
 	r.parse()
 
 	for _, route := range r.getRoutes() {
-		if route.handlerType == handlerTypeWebHandler {
-			router.addWebHandler(route.method, route.path, route.webHandler, route.middlewares...)
-		} else {
-			router.addHandler(route.method, route.path, route.handler, route.middlewares...)
-		}
+		router.addWebHandler(route.method, route.path, route.webHandler, route.middlewares...)
 	}
 }
 
@@ -75,11 +64,7 @@ func (router *Router) Group(prefix string, f func(rou *Router), decors ...Handle
 func (router *Router) Perform() *mux.Router {
 	for _, r := range router.routes {
 		var handler http.Handler
-		if r.handlerType == handlerTypeWebHandler {
-			handler = NewWebHandler(router.container, r.webHandler, r.middlewares...)
-		} else {
-			handler = Middleware(router.container, r.handler, r.middlewares...)
-		}
+		handler = NewWebHandler(router.container, r.webHandler, r.middlewares...)
 		route := router.router.Handle(r.path, handler)
 		if r.method != "" {
 			route.Methods(r.method)
@@ -100,17 +85,6 @@ func (router *Router) addWebHandler(method string, path string, handler WebHandl
 		path:        path,
 		webHandler:  handler,
 		middlewares: middlewares,
-		handlerType: handlerTypeWebHandler,
-	})
-}
-
-func (router *Router) addHandler(method string, path string, handler http.Handler, middlewares ...HandlerDecorator) {
-	router.routes = append(router.routes, route{
-		method:      method,
-		path:        path,
-		handler:     handler,
-		middlewares: middlewares,
-		handlerType: handlerTypeHTTPHandler,
 	})
 }
 
@@ -122,43 +96,49 @@ func (router *Router) parse() {
 	}
 }
 
+func (router *Router) addHandler(method string, path string, handler interface{}, middlewares ...HandlerDecorator) {
+	router.addWebHandler(method, path, func(ctx *WebContext) HTTPResponse {
+		return ctx.Resolve(handler)
+	}, middlewares...)
+}
+
 // Any 指定所有请求方式的路由规则
-func (router *Router) Any(path string, handler http.Handler, middlewares ...HandlerDecorator) {
+func (router *Router) Any(path string, handler interface{}, middlewares ...HandlerDecorator) {
 	router.addHandler("", path, handler, middlewares...)
 }
 
 // Get 指定所有GET方式的路由规则
-func (router *Router) Get(path string, handler http.Handler, middlewares ...HandlerDecorator) {
+func (router *Router) Get(path string, handler interface{}, middlewares ...HandlerDecorator) {
 	router.addHandler("GET", path, handler, middlewares...)
 }
 
 // Post 指定所有Post方式的路由规则
-func (router *Router) Post(path string, handler http.Handler, middlewares ...HandlerDecorator) {
+func (router *Router) Post(path string, handler interface{}, middlewares ...HandlerDecorator) {
 	router.addHandler("POST", path, handler, middlewares...)
 }
 
 // Delete 指定所有DELETE方式的路由规则
-func (router *Router) Delete(path string, handler http.Handler, middlewares ...HandlerDecorator) {
+func (router *Router) Delete(path string, handler interface{}, middlewares ...HandlerDecorator) {
 	router.addHandler("DELETE", path, handler, middlewares...)
 }
 
 // Put 指定所有Put方式的路由规则
-func (router *Router) Put(path string, handler http.Handler, middlewares ...HandlerDecorator) {
+func (router *Router) Put(path string, handler interface{}, middlewares ...HandlerDecorator) {
 	router.addHandler("PUT", path, handler, middlewares...)
 }
 
 // Patch 指定所有Patch方式的路由规则
-func (router *Router) Patch(path string, handler http.Handler, middlewares ...HandlerDecorator) {
+func (router *Router) Patch(path string, handler interface{}, middlewares ...HandlerDecorator) {
 	router.addHandler("PATCH", path, handler, middlewares...)
 }
 
 // Head 指定所有Head方式的路由规则
-func (router *Router) Head(path string, handler http.Handler, middlewares ...HandlerDecorator) {
+func (router *Router) Head(path string, handler interface{}, middlewares ...HandlerDecorator) {
 	router.addHandler("HEAD", path, handler, middlewares...)
 }
 
 // Options 指定所有OPTIONS方式的路由规则
-func (router *Router) Options(path string, handler http.Handler, middlewares ...HandlerDecorator) {
+func (router *Router) Options(path string, handler interface{}, middlewares ...HandlerDecorator) {
 	router.addHandler("OPTIONS", path, handler, middlewares...)
 }
 

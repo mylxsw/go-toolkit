@@ -122,9 +122,22 @@ func (ctx *WebContext) Redirect(location string, code int) *RedirectResponse {
 
 // Resolve resolve implements dependency injection for http handler
 func (ctx *WebContext) Resolve(callback interface{}) HTTPResponse {
-	results, err := ctx.Container.Call(callback)
+	ctxFunc := func() *WebContext { return ctx }
+	requestFunc := func() *Request { return ctx.Request }
+	provider, err := ctx.Container.ServiceProvider(ctxFunc, requestFunc)
 	if err != nil {
-		return ctx.NewErrorResponse(fmt.Sprintf("resolve dependency error: %s", err.Error()), 500)
+		return ctx.NewErrorResponse(
+			fmt.Sprintf("create dependency container for request failed: %s", err),
+			http.StatusInternalServerError,
+		)
+	}
+
+	results, err := ctx.Container.CallWithProvider(callback, provider)
+	if err != nil {
+		return ctx.NewErrorResponse(
+			fmt.Sprintf("resolve dependency error: %s", err.Error()),
+			http.StatusInternalServerError,
+		)
 	}
 
 	if len(results) == 0 {
