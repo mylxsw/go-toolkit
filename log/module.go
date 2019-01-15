@@ -246,3 +246,8 @@ func (module *Logger) Infof(format string, v ...interface{}) string {
 func (module *Logger) Debugf(format string, v ...interface{}) string {
 	return module.Debug(fmt.Sprintf(format, v...))
 }
+
+// Print 使用debug模式输出日志，为了兼容其它项目框架等
+func (module *Logger) Print(v ...interface{}) {
+	module.Debug(v)
+}
