@@ -10,14 +10,14 @@ import (
 
 // Column is a sql column info
 type Column struct {
-	Name string
-	Type string
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 // Rows sql rows object
 type Rows struct {
-	Columns  []Column
-	DataSets [][]interface{}
+	Columns  []Column        `json:"columns"`
+	DataSets [][]interface{} `json:"data_sets"`
 }
 
 // Extract export sql rows to Rows object
