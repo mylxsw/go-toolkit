@@ -51,7 +51,9 @@ func Extract(rows *sql.Rows) (*Rows, error) {
 		}
 
 		dataSets = append(dataSets, collection.MustNew(data).Map(func(k *interface{}, index int) interface{} {
-			fmt.Println(k)
+			if k == nil || *k == nil {
+				return nil
+			}
 
 			res := fmt.Sprintf("%s", *k)
 			switch types[index].DatabaseTypeName() {
