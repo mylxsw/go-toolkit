@@ -101,3 +101,19 @@ func (rm RequestMiddleware) ExceptionHandler() HandlerDecorator {
 		}
 	}
 }
+
+// JSONExceptionHandler create a Exception handler middleware using json response
+func (rm RequestMiddleware) JSONExceptionHandler() HandlerDecorator {
+	return func(handler WebHandler) WebHandler {
+		return func(ctx *WebContext) (resp HTTPResponse) {
+			if err := recover(); err != nil {
+				logger.Errorf("request failed %s", err)
+				resp = ctx.JSONWithCode(M{
+					"error": err.(error).Error(),
+				}, http.StatusInternalServerError)
+			}
+
+			return handler(ctx)
+		}
+	}
+}
