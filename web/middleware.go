@@ -92,10 +92,12 @@ func (rm RequestMiddleware) CORS(origin string) HandlerDecorator {
 func (rm RequestMiddleware) ExceptionHandler() HandlerDecorator {
 	return func(handler WebHandler) WebHandler {
 		return func(ctx *WebContext) (resp HTTPResponse) {
-			if err := recover(); err != nil {
-				logger.Errorf("request failed %s", err)
-				resp = ctx.Error("Internal Server Error", http.StatusInternalServerError)
-			}
+			defer func() {
+				if err := recover(); err != nil {
+					logger.Errorf("request failed %s", err)
+					resp = ctx.Error("Internal Server Error", http.StatusInternalServerError)
+				}
+			}()
 
 			return handler(ctx)
 		}
@@ -106,12 +108,14 @@ func (rm RequestMiddleware) ExceptionHandler() HandlerDecorator {
 func (rm RequestMiddleware) JSONExceptionHandler() HandlerDecorator {
 	return func(handler WebHandler) WebHandler {
 		return func(ctx *WebContext) (resp HTTPResponse) {
-			if err := recover(); err != nil {
-				logger.Errorf("request failed %s", err)
-				resp = ctx.JSONWithCode(M{
-					"error": err.(error).Error(),
-				}, http.StatusInternalServerError)
-			}
+			defer func() {
+				if err := recover(); err != nil {
+					logger.Errorf("request failed %s", err)
+					resp = ctx.JSONWithCode(M{
+						"error": err.(error).Error(),
+					}, http.StatusInternalServerError)
+				}
+			}()
 
 			return handler(ctx)
 		}
