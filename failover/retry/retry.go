@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -28,7 +29,7 @@ type Retryer struct {
 
 func (r *Retryer) retryFunc() {
 	r.retryTimes++
-	if r.err = r.f(r.retryTimes - 1); r.err != nil {
+	if r.err = callWithRecover(r.retryTimes-1, r.f); r.err != nil {
 		if r.retryTimes < r.maxRetryTimes+1 {
 			retryLatter(r.retryFunc, r.retryTimes)
 		}
@@ -93,15 +94,24 @@ func (r *Retryer) RunAsync() <-chan struct{} {
 	r.retryTimes++
 
 	// 异步执行模式下，确保第一次执行是同步的，失败时才异步去重试
-	if r.err = r.f(r.retryTimes - 1); r.err == nil {
+	if r.err = callWithRecover(r.retryTimes-1, r.f); r.err == nil {
 		go func() { fin <- struct{}{} }()
 	} else {
 
 		go func() {
-			r.Run()
+			_, _ = r.Run()
 			fin <- struct{}{}
 		}()
 	}
 
 	return fin
+}
+
+func callWithRecover(retryTime int, f func(retryTime int) error) (err error) {
+	defer func() {
+		if err2 := recover(); err2 != nil {
+			err = fmt.Errorf("%v", err2)
+		}
+	}()
+	return f(retryTime)
 }
