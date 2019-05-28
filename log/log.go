@@ -15,7 +15,7 @@ func SetWriter(writer Writer) *Logger {
 	return GetDefaultModule().SetWriter(writer)
 }
 
-func WithContext(context map[string]interface{}) *ContextLogger {
+func WithContext(context C) *ContextLogger {
 	return GetDefaultModule().WithContext(context)
 }
 

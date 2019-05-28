@@ -10,7 +10,7 @@ import (
 // Formatter 日志格式化接口
 type Formatter interface {
 	// Format 日志格式化
-	Format(colorful bool, currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string
+	Format(colorful bool, currentTime time.Time, moduleName string, level int, context C, v ...interface{}) string
 }
 
 // DefaultFormatter 默认日志格式化
@@ -22,15 +22,14 @@ func NewDefaultFormatter() *DefaultFormatter {
 }
 
 // Format 日志格式化
-func (formatter DefaultFormatter) Format(colorful bool, currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
+func (formatter DefaultFormatter) Format(colorful bool, currentTime time.Time, moduleName string, level int, context C, v ...interface{}) string {
 
 	var message string
 	if colorful {
 
 		if len(moduleName) > 20 {
-			moduleName = "..." + moduleName[len(moduleName) - 17:]
+			moduleName = "..." + moduleName[len(moduleName)-17:]
 		}
-
 
 		message = fmt.Sprintf(
 			"[%s] %-20s %s %s %s",
@@ -59,25 +58,25 @@ func (formatter DefaultFormatter) Format(colorful bool, currentTime time.Time, m
 type JSONFormatter struct{}
 
 // NewJSONFormatter create a new json formatter
-func NewJSONFormatter() *JSONFormatter  {
+func NewJSONFormatter() *JSONFormatter {
 	return &JSONFormatter{}
 }
 
 type jsonOutput struct {
-	ModuleName string                 `json:"module"`
-	LevelName  string                 `json:"level_name"`
-	Level      int                    `json:"level"`
-	Context    map[string]interface{} `json:"context"`
-	Message    string                 `json:"message"`
-	DateTime   string                 `json:"datetime"`
+	ModuleName string `json:"module"`
+	LevelName  string `json:"level_name"`
+	Level      int    `json:"level"`
+	Context    C      `json:"context"`
+	Message    string `json:"message"`
+	DateTime   string `json:"datetime"`
 }
 
 // Format 日志格式化
-func (formatter JSONFormatter) Format(colorful bool, currentTime time.Time, moduleName string, level int, context map[string]interface{}, v ...interface{}) string {
+func (formatter JSONFormatter) Format(colorful bool, currentTime time.Time, moduleName string, level int, context C, v ...interface{}) string {
 	datetime := currentTime.Format(time.RFC3339)
 
 	if context == nil {
-		context = make(map[string]interface{})
+		context = make(C)
 	}
 
 	res, _ := json.Marshal(jsonOutput{
@@ -98,9 +97,9 @@ func (formatter JSONFormatter) Format(colorful bool, currentTime time.Time, modu
 	return fmt.Sprintf("[%s] %s", datetime, message)
 }
 
-func formatContext(context map[string]interface{}) string {
+func formatContext(context C) string {
 	if context == nil {
-		context = make(map[string]interface{})
+		context = make(C)
 	}
 
 	contextJSON, _ := json.Marshal(context)

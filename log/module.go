@@ -103,7 +103,7 @@ func (module *Logger) SetColorful(colorful bool) {
 	}
 }
 
-func (module *Logger) output(level int, context map[string]interface{}, v ...interface{}) string {
+func (module *Logger) output(level int, context C, v ...interface{}) string {
 	message := module.getFormatter().Format(module.colorful(), time.Now().In(module.timeLocation()), module.moduleName, level, context, v...)
 	// 低于设定日志级别的日志不会输出
 	if level >= module.level() {
@@ -163,8 +163,9 @@ func (module *Logger) getWriter() Writer {
 	return module.writer
 }
 
+
 // WithContext 带有上下文信息的日志输出
-func (module *Logger) WithContext(context map[string]interface{}) *ContextLogger {
+func (module *Logger) WithContext(context C) *ContextLogger {
 	return &ContextLogger{
 		logger:  module,
 		context: context,

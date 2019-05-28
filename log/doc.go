@@ -11,6 +11,10 @@ Package log 实现了不同级别的日志输出，可以针对不通的模块�
 
 	func main() {
 		logger.Debugf("xxxx: %s, xxx", "ooo")
+		logger.WithContext(log.C{
+			"id": 123,
+			"name": "lixiaoyao",
+		}).Debugf("Hello, %s", "world")
 	}
 
 */

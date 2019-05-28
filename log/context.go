@@ -2,10 +2,12 @@ package log
 
 import "fmt"
 
+type C map[string]interface{}
+
 // ContextLogger 带有上下文信息的日志输出
 type ContextLogger struct {
 	logger  *Logger
-	context map[string]interface{}
+	context C
 }
 
 // Emergency 记录emergency日志

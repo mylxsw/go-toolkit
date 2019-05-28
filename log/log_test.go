@@ -31,4 +31,10 @@ func TestModule(t *testing.T) {
 
 	log.WithContext(nil).Debug("error occur")
 	log.Module("purchase").SetFormatter(log.NewJSONFormatter()).WithContext(map[string]interface{}{}).Infof("用户 %s 已创建", "mylxsw")
+
+	userLog := log.Module("user")
+	userLog.WithContext(log.C{
+		"id": 123,
+		"name": "lixiaoyao",
+	}).Debugf("Hello, %s", "world")
 }
