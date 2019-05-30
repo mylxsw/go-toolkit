@@ -2,6 +2,7 @@ package process
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/mylxsw/go-toolkit/log"
@@ -69,6 +70,7 @@ func (manager *Manager) startProcess(process *Process, delay time.Duration) {
 
 		logger.Debugf("process %s starting...", process.GetName())
 		restartSignal := <-process.start()
+		fmt.Println(restartSignal)
 		manager.restartProcess <- restartSignal
 	})
 
