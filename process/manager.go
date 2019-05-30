@@ -2,7 +2,6 @@ package process
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/mylxsw/go-toolkit/log"
@@ -22,7 +21,6 @@ type Manager struct {
 func NewManager(closeTimeout time.Duration, processOutputFunc OutputFunc) *Manager {
 	return &Manager{
 		programs:          make(map[string]*Program),
-		restartProcess:    make(chan *Process),
 		closeTimeout:      closeTimeout,
 		processOutputFunc: processOutputFunc,
 	}
@@ -35,6 +33,12 @@ func (manager *Manager) AddProgram(name string, command string, procNum int, use
 
 // Watch start watch process
 func (manager *Manager) Watch(ctx context.Context) {
+
+	manager.restartProcess = make(chan *Process)
+	defer func() {
+		close(manager.restartProcess)
+	}()
+
 	for _, program := range manager.programs {
 		for _, proc := range program.processes {
 			go manager.startProcess(proc, 0)
@@ -70,7 +74,6 @@ func (manager *Manager) startProcess(process *Process, delay time.Duration) {
 
 		logger.Debugf("process %s starting...", process.GetName())
 		restartSignal := <-process.start()
-		fmt.Println(restartSignal)
 		manager.restartProcess <- restartSignal
 	})
 
