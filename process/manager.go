@@ -36,6 +36,7 @@ func (manager *Manager) Watch(ctx context.Context) {
 
 	manager.restartProcess = make(chan *Process)
 	defer func() {
+		// close restartProcess channel to prevent goroutine leak
 		close(manager.restartProcess)
 	}()
 
