@@ -72,8 +72,15 @@ func (manager *Manager) startProcess(process *Process, delay time.Duration) {
 	process.timer = time.AfterFunc(delay, func() {
 		process.removeTimer()
 
+		defer func() {
+			if err := recover(); err != nil {
+				// do nothing
+			}
+		}()
+
 		logger.Debugf("process %s starting...", process.GetName())
 		restartSignal := <-process.start()
+
 		manager.restartProcess <- restartSignal
 	})
 
