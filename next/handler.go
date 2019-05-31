@@ -11,6 +11,8 @@ import (
 	"github.com/mylxsw/go-toolkit/log"
 )
 
+var logger = log.Module("next")
+
 // CreateHTTPHandler create a http handler for request processing
 func CreateHTTPHandler(config *Config) http.Handler {
 	rootDir := filepath.Dir(config.EndpointFile)
@@ -93,7 +95,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			go func() {
 				defer func() {
 					if err := recover(); err != nil {
-						log.Module("next").Errorf("request log handler has some error: %v", err)
+						logger.Errorf("request log handler has some error: %v", err)
 					}
 				}()
 
@@ -114,6 +116,10 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	code, err := h.handler.ServeHTTP(respWriter, r)
 	if err != nil {
-		log.Module("next").Errorf("request failed, code=%d, err=%s", code, err.Error())
+		logger.Errorf("request failed, code=%d, err=%s", code, err.Error())
+	}
+
+	if code != 0 {
+		respWriter.WriteHeader(code)
 	}
 }
