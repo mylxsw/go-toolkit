@@ -35,16 +35,18 @@ func CreateHTTPHandler(config *Config) http.Handler {
 
 // RequestLogHandler request log handler func
 type RequestLogHandler func(rc *RequestContext)
+type ErrorResponseHandler func(w http.ResponseWriter, r *http.Request, code int, err error)
 
 // Config config object for create a handler
 type Config struct {
-	EndpointFile      string
-	ServerIP          string
-	ServerPort        int
-	SoftwareName      string
-	SoftwareVersion   string
-	RequestLogHandler RequestLogHandler
-	Rules             []Rule
+	EndpointFile         string
+	ServerIP             string
+	ServerPort           int
+	SoftwareName         string
+	SoftwareVersion      string
+	RequestLogHandler    RequestLogHandler
+	ErrorResponseHandler ErrorResponseHandler
+	Rules                []Rule
 }
 
 // HTTPHandler http request handler wrapper
@@ -121,5 +123,8 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if code != 0 {
 		respWriter.WriteHeader(code)
+		if h.config.ErrorResponseHandler != nil {
+			h.config.ErrorResponseHandler(respWriter, r, code, err)
+		}
 	}
 }
