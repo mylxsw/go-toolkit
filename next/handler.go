@@ -105,6 +105,11 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 				}()
 
+				errorMsg := ""
+				if err != nil {
+					errorMsg = err.Error()
+				}
+
 				h.config.RequestLogHandler(&RequestContext{
 					UA:      r.UserAgent(),
 					Method:  r.Method,
@@ -114,7 +119,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Body:    r.Form,
 					Consume: consume,
 					Code:    statusCode,
-					Error:   err.Error(),
+					Error:   errorMsg,
 				})
 			}()
 		}
