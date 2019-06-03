@@ -1,7 +1,6 @@
 package next
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -63,7 +62,7 @@ type RequestContext struct {
 	Headers http.Header
 	URI     string
 	Body    url.Values
-	Consume time.Duration
+	Consume float64
 	Code    int
 	Error   string
 }
@@ -77,7 +76,7 @@ func (rc *RequestContext) ToMap() map[string]interface{} {
 		"headers": rc.Headers,
 		"uri":     rc.URI,
 		"body":    rc.Body,
-		"consume": fmt.Sprintf("%.4f", rc.Consume.Seconds()),
+		"consume": rc.Consume,
 		"code":    rc.Code,
 		"error":   rc.Error,
 	}
@@ -117,7 +116,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Headers: r.Header,
 					URI:     r.RequestURI,
 					Body:    r.Form,
-					Consume: consume,
+					Consume: consume.Seconds(),
 					Code:    statusCode,
 					Error:   errorMsg,
 				})
