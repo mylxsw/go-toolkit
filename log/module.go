@@ -107,7 +107,7 @@ func (module *Logger) output(level int, context C, v ...interface{}) string {
 	message := module.getFormatter().Format(module.colorful(), time.Now().In(module.timeLocation()), module.moduleName, level, context, v...)
 	// 低于设定日志级别的日志不会输出
 	if level >= module.level() {
-		if err := module.getWriter().Write(message); err != nil {
+		if err := module.getWriter().Write(level, message); err != nil {
 			fmt.Printf("can not write to output: %s", err)
 		}
 	}
@@ -163,6 +163,15 @@ func (module *Logger) getWriter() Writer {
 	return module.writer
 }
 
+// ReOpen reopen a log file
+func (module *Logger) ReOpen() error {
+	return module.getWriter().ReOpen()
+}
+
+// Close close a log writer
+func (module *Logger) Close() error {
+	return module.getWriter().Close()
+}
 
 // WithContext 带有上下文信息的日志输出
 func (module *Logger) WithContext(context C) *ContextLogger {

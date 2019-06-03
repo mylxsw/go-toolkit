@@ -1,5 +1,35 @@
 package log
 
+// ReOpenAll reopen all logger
+func ReOpenAll() map[string]error {
+	errors := make(map[string]error, len(loggers))
+	for name, l := range loggers {
+		errors[name] = l.ReOpen()
+	}
+
+	return errors
+}
+
+// ReOpen reopen default log file
+func ReOpen() error {
+	return GetDefaultModule().ReOpen()
+}
+
+// CloseAll close all loggers
+func CloseAll() map[string]error {
+	errors := make(map[string]error, len(loggers))
+	for name, l := range loggers {
+		errors[name] = l.Close()
+	}
+
+	return errors
+}
+
+// Close default log file
+func Close() error {
+	return GetDefaultModule().Close()
+}
+
 // SetLevel 设置日志输出级别
 func SetLevel(level int) *Logger {
 	return GetDefaultModule().SetLevel(level)
