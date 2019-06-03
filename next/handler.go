@@ -65,6 +65,7 @@ type RequestContext struct {
 	Body    url.Values
 	Consume time.Duration
 	Code    int
+	Error   error
 }
 
 // ToMap convert the requestContext to a map
@@ -78,6 +79,7 @@ func (rc *RequestContext) ToMap() map[string]interface{} {
 		"body":    rc.Body,
 		"consume": fmt.Sprintf("%.4f", rc.Consume.Seconds()),
 		"code":    rc.Code,
+		"error":   rc.Error.Error(),
 	}
 }
 
@@ -87,6 +89,8 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	respWriter := NewResponseWriter(w, func(code int) {
 		statusCode = code
 	})
+
+	var err error
 	defer func(startTime time.Time) {
 		consume := time.Now().Sub(startTime)
 		if r.Form == nil {
@@ -110,6 +114,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Body:    r.Form,
 					Consume: consume,
 					Code:    statusCode,
+					Error:   err,
 				})
 			}()
 		}
