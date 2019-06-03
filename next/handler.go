@@ -55,7 +55,7 @@ type HTTPHandler struct {
 	config  *Config
 }
 
-// RequestContext requext context information
+// RequestContext request context information
 type RequestContext struct {
 	UA      string
 	Method  string
@@ -65,7 +65,7 @@ type RequestContext struct {
 	Body    url.Values
 	Consume time.Duration
 	Code    int
-	Error   error
+	Error   string
 }
 
 // ToMap convert the requestContext to a map
@@ -79,7 +79,7 @@ func (rc *RequestContext) ToMap() map[string]interface{} {
 		"body":    rc.Body,
 		"consume": fmt.Sprintf("%.4f", rc.Consume.Seconds()),
 		"code":    rc.Code,
-		"error":   rc.Error.Error(),
+		"error":   rc.Error,
 	}
 }
 
@@ -114,7 +114,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Body:    r.Form,
 					Consume: consume,
 					Code:    statusCode,
-					Error:   err,
+					Error:   err.Error(),
 				})
 			}()
 		}
