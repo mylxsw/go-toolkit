@@ -29,14 +29,14 @@ func New(reloadSignals []os.Signal, shutdownSignals []os.Signal) *Graceful {
 	}
 }
 
-func (gf *Graceful) RegisterReloadHandler(h func()) {
+func (gf *Graceful) AddReloadHandler(h func()) {
 	gf.lock.Lock()
 	defer gf.lock.Unlock()
 
 	gf.reloadHandlers = append(gf.reloadHandlers, h)
 }
 
-func (gf *Graceful) RegisterShutdownHandler(h func()) {
+func (gf *Graceful) AddShutdownHandler(h func()) {
 	gf.lock.Lock()
 	defer gf.lock.Unlock()
 
