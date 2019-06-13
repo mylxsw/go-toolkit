@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
@@ -42,17 +43,17 @@ func (req *Request) Get(key string) interface{} {
 	return context.Get(req.r, key)
 }
 
-// Clear 清理掉请求中设置的变量
+// Clear clear all variables in request
 func (req *Request) Clear() {
 	context.Clear(req.r)
 }
 
-// HTTPRequest 返回http.Request对象
+// HTTPRequest return a http.Request
 func (req *Request) HTTPRequest() *http.Request {
 	return req.r
 }
 
-// PathVar 获取路径中的变量
+// PathVar return a path parameter
 func (req *Request) PathVar(key string) string {
 	if res, ok := mux.Vars(req.r)[key]; ok {
 		return res
@@ -61,14 +62,80 @@ func (req *Request) PathVar(key string) string {
 	return ""
 }
 
-// PathVars 获取所有的路径变量
+// PathVars return all path parameters
 func (req *Request) PathVars() map[string]string {
 	return mux.Vars(req.r)
 }
 
-// Input 获取表单输入
+// Input return form parameter from request
 func (req *Request) Input(key string) string {
 	return req.r.FormValue(key)
+}
+
+// InputWithDefault return a form parameter with a default value
+func (req *Request) InputWithDefault(key string, defaultVal string) string {
+	val := req.Input(key)
+	if val == "" {
+		return defaultVal
+	}
+
+	return val
+}
+
+func (req *Request) ToInt(val string, defaultVal int) int {
+	res, err := strconv.Atoi(val)
+	if err != nil {
+		return defaultVal
+	}
+
+	return res
+}
+
+func (req *Request) ToInt64(val string, defaultVal int64) int64 {
+	res, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return defaultVal
+	}
+
+	return res
+}
+
+func (req *Request) ToFloat32(val string, defaultVal float32) float32 {
+	res, err := strconv.ParseFloat(val, 32)
+	if err != nil {
+		return defaultVal
+	}
+
+	return float32(res)
+}
+
+func (req *Request) ToFloat64(val string, defaultVal float64) float64 {
+	res, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return defaultVal
+	}
+
+	return res
+}
+
+// IntInput return a integer form parameter
+func (req *Request) IntInput(key string, defaultVal int) int {
+	return req.ToInt(req.Input(key), defaultVal)
+}
+
+// Int64Input return a integer form parameter
+func (req *Request) Int64Input(key string, defaultVal int64) int64 {
+	return req.ToInt64(req.Input(key), defaultVal)
+}
+
+// Float32Input return a float32 form parameter
+func (req *Request) Float32Input(key string, defaultVal float32) float32 {
+	return req.ToFloat32(req.Input(key), defaultVal)
+}
+
+// Float64Input return a float64 form parameter
+func (req *Request) Float64Input(key string, defaultVal float64) float64 {
+	return req.ToFloat64(req.Input(key), defaultVal)
 }
 
 // File Retrieving Uploaded Files
