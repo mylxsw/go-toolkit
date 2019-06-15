@@ -5,11 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/mylxsw/go-toolkit/log"
 )
-
-var logger = log.Module("toolkit.file")
 
 // ZipFile is a file wrapper contains filename and path
 type ZipFile struct {
@@ -17,7 +13,7 @@ type ZipFile struct {
 	Path string `json:"path"`
 }
 
-// CreateZipArchiveFile creaate a zip archive file from files
+// CreateZipArchiveFile create a zip archive file from files
 func CreateZipArchiveFile(saveAs string, files []ZipFile, ignoreError bool) (err error) {
 	defer func() {
 		if err != nil {
@@ -32,26 +28,45 @@ func CreateZipArchiveFile(saveAs string, files []ZipFile, ignoreError bool) (err
 
 	defer saveAsFile.Close()
 
-	err = CreateZipArchive(saveAsFile, files, ignoreError)
+	_, err = CreateZipArchive(saveAsFile, files, ignoreError)
 	return
 }
 
+// CreateZipArchiveFileWithIgnored create a zip archive file from files, and return all ignored files
+func CreateZipArchiveFileWithIgnored(saveAs string, files []ZipFile, ignoreError bool) (ignoredFiles []ZipFile, err error) {
+	defer func() {
+		if err != nil {
+			os.Remove(saveAs)
+		}
+	}()
+
+	saveAsFile, err := os.Create(saveAs)
+	if err != nil {
+		return ignoredFiles, fmt.Errorf("can not create destination zip archive file: %s", err.Error())
+	}
+
+	defer saveAsFile.Close()
+
+	return CreateZipArchive(saveAsFile, files, ignoreError)
+}
+
 // CreateZipArchive create a zip archive
-func CreateZipArchive(w io.Writer, files []ZipFile, ignoreError bool) error {
+func CreateZipArchive(w io.Writer, files []ZipFile, ignoreError bool) ([]ZipFile, error) {
 	zipWriter := zip.NewWriter(w)
 	defer zipWriter.Close()
 
+	var ignoredFiles = make([]ZipFile, 0)
 	for _, file := range files {
 		if err := addFileToZipArchive(zipWriter, file); err != nil {
-			if !ignoreError {
-				return err
-			}
+			ignoredFiles = append(ignoredFiles, file)
 
-			logger.Errorf("file %s has been ignored: %s", file.Name, err)
+			if !ignoreError {
+				return ignoredFiles, err
+			}
 		}
 	}
 
-	return nil
+	return ignoredFiles, nil
 }
 
 // addFileToZipArchive add a file to zip archive
