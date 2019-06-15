@@ -8,7 +8,7 @@ import (
 
 var (
 	// ErrorInvalidDataType invalid data type error
-	ErrorInvalidDataType = errors.New("Invalid data type")
+	ErrorInvalidDataType = errors.New("invalid data type")
 )
 
 // DataType is collection data type

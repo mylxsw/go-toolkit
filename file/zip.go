@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/mylxsw/go-toolkit/log"
 )
+
+var logger = log.Module("toolkit.file")
 
 // ZipFile is a file wrapper contains filename and path
 type ZipFile struct {
@@ -14,7 +18,7 @@ type ZipFile struct {
 }
 
 // CreateZipArchiveFile creaate a zip archive file from files
-func CreateZipArchiveFile(saveAs string, files []ZipFile) (err error) {
+func CreateZipArchiveFile(saveAs string, files []ZipFile, ignoreError bool) (err error) {
 	defer func() {
 		if err != nil {
 			os.Remove(saveAs)
@@ -28,18 +32,22 @@ func CreateZipArchiveFile(saveAs string, files []ZipFile) (err error) {
 
 	defer saveAsFile.Close()
 
-	err = CreateZipArchive(saveAsFile, files)
+	err = CreateZipArchive(saveAsFile, files, ignoreError)
 	return
 }
 
 // CreateZipArchive create a zip archive
-func CreateZipArchive(w io.Writer, files []ZipFile) error {
+func CreateZipArchive(w io.Writer, files []ZipFile, ignoreError bool) error {
 	zipWriter := zip.NewWriter(w)
 	defer zipWriter.Close()
 
 	for _, file := range files {
 		if err := addFileToZipArchive(zipWriter, file); err != nil {
-			return err
+			if !ignoreError {
+				return err
+			}
+
+			logger.Errorf("file %s has been ignored: %s", file.Name, err)
 		}
 	}
 
