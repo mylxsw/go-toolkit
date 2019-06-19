@@ -32,3 +32,9 @@ func InsertSuffix(src string, suffix string) string {
 
 	return fmt.Sprintf("%s%s%s", src[:len(src)-len(ext)], suffix, ext)
 }
+
+func ReplaceExt(src string, ext string) string {
+	ext1 := path.Ext(src)
+
+	return fmt.Sprintf("%s%s", src[:len(src)-len(ext1)], ext)
+}

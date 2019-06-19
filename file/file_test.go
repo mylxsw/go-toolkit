@@ -30,3 +30,10 @@ func TestInsertSuffix(t *testing.T) {
 		t.Errorf("test failed")
 	}
 }
+
+func TestReplaceExt(t *testing.T) {
+	f1 := "/file/path/to/file.txt"
+	if ReplaceExt(f1, ".orm.go") != "/file/path/to/file.orm.go" {
+		t.Errorf("test failed")
+	}
+}
