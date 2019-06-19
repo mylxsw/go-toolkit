@@ -17,9 +17,16 @@ func TestFileExist(t *testing.T) {
 
 func TestFileSize(t *testing.T) {
 	fileSize := Size("zip.go")
-	fmt.Printf("file size is %.2f K", float64(fileSize) / 1024)
+	fmt.Printf("file size is %.2f K", float64(fileSize)/1024)
 
 	if fileSize <= 0 {
 		t.Errorf("check file size failed")
+	}
+}
+
+func TestInsertSuffix(t *testing.T) {
+	f1 := "/file/path/to/file.txt"
+	if "/file/path/to/file@x1.txt" != InsertSuffix(f1, "@x1") {
+		t.Errorf("test failed")
 	}
 }

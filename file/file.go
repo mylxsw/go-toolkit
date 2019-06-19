@@ -1,6 +1,10 @@
 package file
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"path"
+)
 
 // Exist 判断文件是否存在
 func Exist(path string) bool {
@@ -20,4 +24,11 @@ func Size(path string) int64 {
 	}
 
 	return stat.Size()
+}
+
+// InsertSuffix insert a suffix to filepath
+func InsertSuffix(src string, suffix string) string {
+	ext := path.Ext(src)
+
+	return fmt.Sprintf("%s%s%s", src[:len(src)-len(ext)], suffix, ext)
 }

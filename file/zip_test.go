@@ -15,7 +15,7 @@ func TestCreateZipArchiveFile(t *testing.T) {
 
 	zipfile := "xxx.zip"
 
-	if err := CreateZipArchiveFile(zipfile, files); err != nil {
+	if err := CreateZipArchiveFile(zipfile, files, false); err != nil {
 		t.Errorf("test failed: %s", err.Error())
 	}
 
