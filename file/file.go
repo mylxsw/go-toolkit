@@ -2,6 +2,7 @@ package file
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 )
@@ -33,8 +34,15 @@ func InsertSuffix(src string, suffix string) string {
 	return fmt.Sprintf("%s%s%s", src[:len(src)-len(ext)], suffix, ext)
 }
 
+// ReplaceExt replace ext for src
 func ReplaceExt(src string, ext string) string {
 	ext1 := path.Ext(src)
 
 	return fmt.Sprintf("%s%s", src[:len(src)-len(ext1)], ext)
+}
+
+// FileGetContents reads entire file into a string
+func FileGetContents(filename string) (string, error) {
+	res, err := ioutil.ReadFile(filename)
+	return string(res), err
 }
