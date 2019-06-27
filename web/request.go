@@ -7,14 +7,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 )
 
 // Request 请求对象封装
 type Request struct {
-	r *http.Request
+	r    *http.Request
+	body []byte
 }
 
 // Raw get the underlying http.Request
@@ -25,12 +28,7 @@ func (req *Request) Raw() *http.Request {
 // UnmarshalJSON unmarshal request body as json object
 // result must be reference to a variable
 func (req *Request) UnmarshalJSON(v interface{}) error {
-	data, err := ioutil.ReadAll(req.r.Body)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(data, v)
+	return json.Unmarshal(req.body, v)
 }
 
 // Set 设置一个变量，存储到当前请求
@@ -69,7 +67,55 @@ func (req *Request) PathVars() map[string]string {
 
 // Input return form parameter from request
 func (req *Request) Input(key string) string {
+	if req.IsJSON() {
+		val := req.JSONGet(key)
+		if val != "" {
+			return val
+		}
+	}
+
 	return req.r.FormValue(key)
+}
+
+func (req *Request) JSONGet(keys ...string) string {
+	value, dataType, _, err := jsonparser.Get(req.body, keys...)
+	if err != nil {
+		return ""
+	}
+
+	switch dataType {
+	case jsonparser.String:
+		if res, err := jsonparser.ParseString(value); err == nil {
+			return res
+		}
+	case jsonparser.Number:
+		if res, err := jsonparser.ParseFloat(value); err == nil {
+			return strconv.FormatFloat(res, 'f', -1, 32)
+		}
+		if res, err := jsonparser.ParseInt(value); err == nil {
+			return fmt.Sprintf("%d", res)
+		}
+	case jsonparser.Object:
+		fallthrough
+	case jsonparser.Array:
+		return fmt.Sprintf("%x", value)
+	case jsonparser.Boolean:
+		if res, err := jsonparser.ParseBoolean(value); err == nil {
+			if res {
+				return "true"
+			} else {
+				return "false"
+			}
+		}
+	case jsonparser.NotExist:
+		fallthrough
+	case jsonparser.Null:
+		fallthrough
+	case jsonparser.Unknown:
+		return ""
+	}
+
+	return ""
 }
 
 // InputWithDefault return a form parameter with a default value
@@ -167,14 +213,29 @@ func (req *Request) File(key string) (*UploadedFile, error) {
 	}, nil
 }
 
-// IsXMLHTTPRequest 判断是否是XMLHTTPRequest
+// IsXMLHTTPRequest return whether the request is a ajax request
 func (req *Request) IsXMLHTTPRequest() bool {
 	return req.r.Header.Get("X-Requested-With") == "XMLHttpRequest"
 }
 
-// AJAX 判断是否是AJAX请求
+// AJAX return whether the request is a ajax request
 func (req *Request) AJAX() bool {
 	return req.IsXMLHTTPRequest()
+}
+
+// IsJSON return whether the request is a json request
+func (req *Request) IsJSON() bool {
+	return req.ContentType() == "application/json"
+}
+
+// ContentType return content type for request
+func (req *Request) ContentType() string {
+	t := req.r.Header.Get("Content-Type")
+	if t == "" {
+		return "text/html"
+	}
+
+	return strings.ToLower(strings.Split(t, ";")[0])
 }
 
 // Is 判断请求方法

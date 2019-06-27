@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/mylxsw/go-toolkit/container"
@@ -37,12 +38,14 @@ func NewWebHandler(c *container.Container, handler WebHandler, decors ...Handler
 
 // ServeHTTP 实现http.HandlerFunc接口
 func (h webHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	body, _ := ioutil.ReadAll(r.Body)
+
 	context := &WebContext{
 		Response: &Response{
 			w:       w,
 			headers: make(map[string]string),
 		},
-		Request:   &Request{r: r},
+		Request:   &Request{r: r, body: body},
 		Container: h.container,
 	}
 

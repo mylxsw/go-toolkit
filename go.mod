@@ -1,6 +1,7 @@
 module github.com/mylxsw/go-toolkit
 
 require (
+	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fatih/color v1.7.0
 	github.com/go-ini/ini v1.39.3
