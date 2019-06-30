@@ -231,6 +231,19 @@ func (collection *Collection) toMap(result interface{}) error {
 	return nil
 }
 
+func (collection *Collection) ToArray() ([]interface{}, error) {
+	if collection.isMapType() {
+		return nil, fmt.Errorf("collection is a map")
+	}
+
+	var res []interface{}
+	if err := collection.toArray(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (collection *Collection) toArray(result interface{}) error {
 	resultv := reflect.ValueOf(result)
 	if resultv.Kind() != reflect.Ptr {
