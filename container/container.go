@@ -443,6 +443,19 @@ func (c *Container) instanceOfType(t reflect.Type, provider func() []*Entity) (r
 	return reflect.ValueOf(arg), nil
 }
 
+// Keys return all keys
+func (c *Container) Keys() []interface{} {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	results := make([]interface{}, 0)
+	for k := range c.objects {
+		results = append(results, k)
+	}
+
+	return results
+}
+
 func isErrorType(t reflect.Type) bool {
 	return t.Implements(reflect.TypeOf((*error)(nil)).Elem())
 }

@@ -137,6 +137,10 @@ func TestInterfaceInjection(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	for _, k := range c.Keys() {
+		fmt.Println(k)
+	}
 }
 
 func TestWithContext(t *testing.T) {
