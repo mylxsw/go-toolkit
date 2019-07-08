@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -39,6 +40,8 @@ func NewWebHandler(c *container.Container, handler WebHandler, decors ...Handler
 // ServeHTTP 实现http.HandlerFunc接口
 func (h webHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
+	_ = r.Body.Close()
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
 	context := &WebContext{
 		Response: &Response{
