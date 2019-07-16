@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/mylxsw/go-toolkit/log"
+	"github.com/mylxsw/asteria"
 )
 
-var logger = log.Module("toolkit.fpm")
+var logger = asteria.Module("toolkit.fpm")
 
 // Fpm FPM进程管理对象
 type Fpm struct {

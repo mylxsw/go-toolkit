@@ -1,0 +1,24 @@
+language: go
+
+go:
+  - 1.11
+  - 1.12
+  - tip
+
+env:
+  - GO111MODULE=on
+
+matrix:
+  fast_finish: true
+
+install:
+  - go get golang.org/x/tools/cmd/cover
+  - go get github.com/mattn/goveralls
+
+script:
+  - go vet -x ./...
+  - go test -v -race ./...
+  - go test -race -coverprofile=coverage.txt -covermode=atomic
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/mylxsw/go-toolkit/log"
+	"github.com/mylxsw/asteria"
 )
 
-var logger = log.Module("toolkit.process")
+var logger = asteria.Module("toolkit.process")
 
 // Manager is process manager
 type Manager struct {
