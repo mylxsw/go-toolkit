@@ -22,13 +22,13 @@
             RequestLogHandler: func(rc *next.RequestContext) {
                 var message bytes.Buffer
                 if err := params.AccessLogTemplate.Execute(&message, rc); err != nil {
-                    asteria.Module("server").Errorf("invalid log format: %s", err.Error())
+                    log.Module("server").Errorf("invalid log format: %s", err.Error())
                 } else {
                     if params.Debug {
-                        asteria.Module("server.request").
+                        log.Module("server.request").
                             WithContext(rc.ToMap()).Debugf(message.String())
                     } else {
-                        asteria.Module("server.request").Debugf(message.String())
+                        log.Module("server.request").Debugf(message.String())
                     }
                 }
             },

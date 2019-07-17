@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mylxsw/asteria"
+	"github.com/mylxsw/asteria/log"
 )
 
-var logger = asteria.Module("next")
+var logger = log.Module("next")
 
 // CreateHTTPHandler create a http handler for request processing
 func CreateHTTPHandler(config *Config) http.Handler {

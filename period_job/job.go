@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mylxsw/asteria"
+	"github.com/mylxsw/asteria/log"
 	"github.com/mylxsw/go-toolkit/container"
 )
 
-var logger = asteria.Module("adanos.job")
+var logger = log.Module("adanos.job")
 
 // Job is a interface for a job
 type Job interface {

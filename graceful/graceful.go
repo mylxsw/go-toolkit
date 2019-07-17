@@ -5,10 +5,10 @@ import (
 	"os/signal"
 	"sync"
 
-	"github.com/mylxsw/asteria"
+	"github.com/mylxsw/asteria/log"
 )
 
-var logger = asteria.Module("toolkit.graceful")
+var logger = log.Module("toolkit.graceful")
 
 type Graceful struct {
 	lock sync.Mutex

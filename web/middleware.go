@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mylxsw/asteria"
+	"github.com/mylxsw/asteria/log"
 	"github.com/mylxsw/go-toolkit/container"
 )
 
-var logger = asteria.Module("toolkit.web")
+var logger = log.Module("toolkit.web")
 
 // HandlerDecorator 该函数是http handler的装饰器
 type HandlerDecorator func(WebHandler) WebHandler
