@@ -2,8 +2,8 @@ package web
 
 import (
 	"mime/multipart"
-	"strings"
 	"os"
+	"strings"
 )
 
 // UploadedFile 上传的文件
