@@ -8,8 +8,6 @@ import (
 	"github.com/mylxsw/go-toolkit/container"
 )
 
-var logger = log.Module("toolkit.web")
-
 // HandlerDecorator 该函数是http handler的装饰器
 type HandlerDecorator func(WebHandler) WebHandler
 
@@ -62,7 +60,7 @@ func (rm RequestMiddleware) AccessLog() HandlerDecorator {
 	return func(handler WebHandler) WebHandler {
 		return func(ctx *WebContext) HTTPResponse {
 			defer func(startTime time.Time) {
-				logger.Debugf(
+				log.Debugf(
 					"%-8s %s [%.4fms]",
 					ctx.Request.Method(),
 					ctx.Request.HTTPRequest().URL.String(),
@@ -94,7 +92,7 @@ func (rm RequestMiddleware) ExceptionHandler() HandlerDecorator {
 		return func(ctx *WebContext) (resp HTTPResponse) {
 			defer func() {
 				if err := recover(); err != nil {
-					logger.Errorf("request failed %s", err)
+					log.Errorf("request failed %s", err)
 					resp = ctx.Error("Internal Server Error", http.StatusInternalServerError)
 				}
 			}()
@@ -110,7 +108,7 @@ func (rm RequestMiddleware) JSONExceptionHandler() HandlerDecorator {
 		return func(ctx *WebContext) (resp HTTPResponse) {
 			defer func() {
 				if err := recover(); err != nil {
-					logger.Errorf("request failed %s", err)
+					log.Errorf("request failed %s", err)
 					resp = ctx.JSONWithCode(M{
 						"error": err.(error).Error(),
 					}, http.StatusInternalServerError)

@@ -10,8 +10,6 @@ import (
 	"github.com/mylxsw/asteria/log"
 )
 
-var logger = log.Module("next")
-
 // CreateHTTPHandler create a http handler for request processing
 func CreateHTTPHandler(config *Config) http.Handler {
 	rootDir := filepath.Dir(config.EndpointFile)
@@ -100,7 +98,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			go func() {
 				defer func() {
 					if err := recover(); err != nil {
-						logger.Errorf("request log handler has some error: %v", err)
+						log.Errorf("request log handler has some error: %v", err)
 					}
 				}()
 
@@ -127,7 +125,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	code, err := h.handler.ServeHTTP(respWriter, r)
 	if err != nil {
-		logger.Errorf("request failed, code=%d, err=%s", code, err.Error())
+		log.Errorf("request failed, code=%d, err=%s", code, err.Error())
 	}
 
 	if code != 0 {

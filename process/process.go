@@ -11,6 +11,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/mylxsw/asteria/log"
 )
 
 // OutputType command output type
@@ -122,7 +124,7 @@ func NewProcess(name string, command string, args []string, username string) *Pr
 	if username != "" {
 		sysUser, err := user.Lookup(username)
 		if err != nil {
-			logger.Warningf("lookup user %s failed: %s", username, err.Error())
+			log.Warningf("lookup user %s failed: %s", username, err.Error())
 		} else {
 			process.uid = sysUser.Uid
 		}
@@ -147,7 +149,7 @@ func (process *Process) start() <-chan *Process {
 			process.SetPID(0)
 			process.lastAliveTime = time.Now().Sub(startTime)
 
-			logger.Warningf("process %s finished", process.name)
+			log.Warningf("process %s finished", process.name)
 			process.stat <- process
 		}()
 
@@ -160,7 +162,7 @@ func (process *Process) start() <-chan *Process {
 		go process.consoleLog(LogTypeStderr, &stderrPipe)
 
 		if err := cmd.Start(); err != nil {
-			logger.Errorf("process %s start failed: %s", process.name, err.Error())
+			log.Errorf("process %s start failed: %s", process.name, err.Error())
 			process.SetLastErrorMessage(err.Error())
 			return
 		}
@@ -168,7 +170,7 @@ func (process *Process) start() <-chan *Process {
 		process.SetPID(cmd.Process.Pid)
 
 		if err := cmd.Wait(); err != nil {
-			logger.Warningf("process %s stopped with error : %s", process.name, err.Error())
+			log.Warningf("process %s stopped with error : %s", process.name, err.Error())
 			process.SetLastErrorMessage(err.Error())
 		}
 	}()
@@ -206,13 +208,13 @@ func (process *Process) stop(timeout time.Duration) {
 	defer process.lock.Unlock()
 
 	if pid <= 0 {
-		logger.Warningf("process %s with pid=%d is invalid", name, pid)
+		log.Warningf("process %s with pid=%d is invalid", name, pid)
 		return
 	}
 
 	proc, err := os.FindProcess(pid)
 	if err != nil {
-		logger.Warningf("process %s with pid=%d doesn't exist", name, pid)
+		log.Warningf("process %s with pid=%d doesn't exist", name, pid)
 		return
 	}
 
@@ -221,7 +223,7 @@ func (process *Process) stop(timeout time.Duration) {
 		proc.Signal(syscall.SIGTERM)
 		close(stopped)
 
-		logger.Debugf("process %s gracefully stopped", name)
+		log.Debugf("process %s gracefully stopped", name)
 	}()
 
 	select {
@@ -229,7 +231,7 @@ func (process *Process) stop(timeout time.Duration) {
 		return
 	case <-time.After(timeout):
 		proc.Signal(syscall.SIGKILL)
-		logger.Debugf("process %s forced stopped", name)
+		log.Debugf("process %s forced stopped", name)
 	}
 }
 

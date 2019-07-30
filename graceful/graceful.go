@@ -8,8 +8,6 @@ import (
 	"github.com/mylxsw/asteria/log"
 )
 
-var logger = log.Module("toolkit.graceful")
-
 type Graceful struct {
 	lock sync.Mutex
 
@@ -44,15 +42,15 @@ func (gf *Graceful) AddShutdownHandler(h func()) {
 }
 
 func (gf *Graceful) Reload() {
-	logger.Debug("execute reload...")
+	log.Debug("execute reload...")
 	go gf.reload()
 }
 
 func (gf *Graceful) Shutdown() {
-	logger.Debug("shutdown...")
+	log.Debug("shutdown...")
 
 	if err := gf.SignalSelf(os.Interrupt); err != nil {
-		logger.Errorf("shutdown failed: %s", err)
+		log.Errorf("shutdown failed: %s", err)
 	}
 }
 
@@ -73,7 +71,7 @@ func (gf *Graceful) shutdown() {
 		func() {
 			defer func() {
 				if err := recover(); err != nil {
-					logger.Errorf("execute shutdown handler failed: %s", err)
+					log.Errorf("execute shutdown handler failed: %s", err)
 				}
 			}()
 			gf.shutdownHandlers[i]()
@@ -89,7 +87,7 @@ func (gf *Graceful) reload() {
 		func() {
 			defer func() {
 				if err := recover(); err != nil {
-					logger.Errorf("execute reload handler failed: %s", err)
+					log.Errorf("execute reload handler failed: %s", err)
 				}
 			}()
 			gf.reloadHandlers[i]()
@@ -117,7 +115,7 @@ func (gf *Graceful) Start() error {
 
 		for _, s := range gf.reloadSignals {
 			if s == sig {
-				logger.Debugf("received a reload signal %s", sig.String())
+				log.Debugf("received a reload signal %s", sig.String())
 				gf.reload()
 				break
 			}
@@ -125,7 +123,7 @@ func (gf *Graceful) Start() error {
 	}
 FINAL:
 
-	logger.Debug("received a shutdown signal")
+	log.Debug("received a shutdown signal")
 
 	gf.shutdown()
 
