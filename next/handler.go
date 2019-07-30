@@ -1,8 +1,9 @@
 package next
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -59,7 +60,7 @@ type RequestContext struct {
 	Referer string
 	Headers http.Header
 	URI     string
-	Body    url.Values
+	Body    string
 	Consume float64
 	Code    int
 	Error   string
@@ -87,13 +88,13 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		statusCode = code
 	})
 
+	body, _ := ioutil.ReadAll(r.Body)
+	_ = r.Body.Close()
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
 	var err error
 	defer func(startTime time.Time) {
 		consume := time.Now().Sub(startTime)
-		if r.Form == nil {
-			r.ParseForm()
-		}
-
 		if h.config.RequestLogHandler != nil {
 			go func() {
 				defer func() {
@@ -113,7 +114,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Referer: r.Referer(),
 					Headers: r.Header,
 					URI:     r.RequestURI,
-					Body:    r.Form,
+					Body:    string(body),
 					Consume: consume.Seconds(),
 					Code:    statusCode,
 					Error:   errorMsg,
