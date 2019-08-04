@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/go-ini/ini"
 	"github.com/mylxsw/go-toolkit/file"
 	"github.com/mylxsw/go-toolkit/pidfile"
+	"gopkg.in/ini.v1"
 )
 
 // Process PHP-FPM进程管理器
