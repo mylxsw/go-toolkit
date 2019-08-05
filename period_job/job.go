@@ -32,7 +32,7 @@ func NewManager(ctx context.Context, cc *container.Container) *Manager {
 
 // Run 启动周期性任务循环
 func (jm *Manager) Run(name string, job Job, interval time.Duration) {
-	log.Debugf("Job %s 运行中...", name)
+	log.Debugf("Job %s running...", name)
 	jm.wg.Add(1)
 
 	go func() {
@@ -48,15 +48,15 @@ func (jm *Manager) Run(name string, job Job, interval time.Duration) {
 				func() {
 					defer func() {
 						if err := recover(); err != nil {
-							log.Errorf("Job %s 发生异常：%s", name, err)
+							log.Errorf("Job %s has some error：%s", name, err)
 						}
 					}()
 					if err := jm.container.Resolve(job.Handle); err != nil {
-						log.Errorf("Job %s 执行失败: %s", name, err)
+						log.Errorf("Job %s failed: %s", name, err)
 					}
 				}()
 			case <-jm.ctx.Done():
-				log.Debugf("Job %s 已停止", name)
+				log.Debugf("Job %s stopped", name)
 				return
 			}
 		}
