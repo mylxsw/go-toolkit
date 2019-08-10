@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/mylxsw/asteria/log"
-	"github.com/mylxsw/go-toolkit/container"
+	"github.com/mylxsw/container"
 )
 
 // Job is a interface for a job

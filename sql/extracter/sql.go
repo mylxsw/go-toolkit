@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/mylxsw/go-toolkit/collection"
+	"github.com/mylxsw/coll"
 )
 
 // Column is a sql column info
@@ -28,7 +28,7 @@ func Extract(rows *sql.Rows) (*Rows, error) {
 	}
 
 	var columns []Column
-	if err := collection.MustNew(types).Map(func(t *sql.ColumnType) Column {
+	if err := coll.MustNew(types).Map(func(t *sql.ColumnType) Column {
 		return Column{
 			Name: t.Name(),
 			Type: t.DatabaseTypeName(),
@@ -40,7 +40,7 @@ func Extract(rows *sql.Rows) (*Rows, error) {
 	dataSets := make([][]interface{}, 0)
 
 	for rows.Next() {
-		var data = collection.MustNew(types).
+		var data = coll.MustNew(types).
 			Map(func(t *sql.ColumnType) interface{} {
 				var tt interface{}
 				return &tt
@@ -50,7 +50,7 @@ func Extract(rows *sql.Rows) (*Rows, error) {
 			return nil, err
 		}
 
-		dataSets = append(dataSets, collection.MustNew(data).Map(func(k *interface{}, index int) interface{} {
+		dataSets = append(dataSets, coll.MustNew(data).Map(func(k *interface{}, index int) interface{} {
 			if k == nil || *k == nil {
 				return nil
 			}
