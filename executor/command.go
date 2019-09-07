@@ -17,9 +17,12 @@ const outputChanSize = 1000
 type Command struct {
 	Executable string
 	Args       []string
-	output     chan Output
-	stdout     string
-	stderr     string
+
+	init func(cmd *exec.Cmd) error
+
+	output chan Output
+	stdout string
+	stderr string
 
 	lock sync.Mutex
 }
@@ -60,6 +63,11 @@ func New(executable string, args ...string) *Command {
 	}
 }
 
+// Init initialize the command
+func (command *Command) Init(init func(cmd *exec.Cmd) error) {
+	command.init = init
+}
+
 // Run 执行命令
 func (command *Command) Run() (bool, error) {
 	defer command.close()
@@ -67,6 +75,12 @@ func (command *Command) Run() (bool, error) {
 	cmd := exec.Command(command.Executable, command.Args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
+	}
+
+	if command.init != nil {
+		if err := command.init(cmd); err != nil {
+			return false, err
+		}
 	}
 
 	stdout, err := cmd.StdoutPipe()
