@@ -2,6 +2,7 @@ package executor
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -69,10 +70,10 @@ func (command *Command) Init(init func(cmd *exec.Cmd) error) {
 }
 
 // Run 执行命令
-func (command *Command) Run() (bool, error) {
+func (command *Command) Run(ctx context.Context) (bool, error) {
 	defer command.close()
 
-	cmd := exec.Command(command.Executable, command.Args...)
+	cmd := exec.CommandContext(ctx, command.Executable, command.Args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
