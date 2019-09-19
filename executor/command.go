@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
-	"syscall"
 )
 
 const outputChanSize = 1000
@@ -65,6 +64,11 @@ func New(executable string, args ...string) *Command {
 }
 
 // Init initialize the command
+// you can set cmd properties in init callback
+// such as
+//     cmd.SysProcAttr = &syscall.SysProcAttr{
+//	       Setpgid: true,
+//     }
 func (command *Command) Init(init func(cmd *exec.Cmd) error) {
 	command.init = init
 }
@@ -74,10 +78,6 @@ func (command *Command) Run(ctx context.Context) (bool, error) {
 	defer command.close()
 
 	cmd := exec.CommandContext(ctx, command.Executable, command.Args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-
 	if command.init != nil {
 		if err := command.init(cmd); err != nil {
 			return false, err
