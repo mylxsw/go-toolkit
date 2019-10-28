@@ -18,6 +18,8 @@ type Job interface {
 type Manager struct {
 	container *container.Container
 	ctx       context.Context
+	pauseJobs map[string]bool
+	lock      sync.RWMutex
 
 	wg sync.WaitGroup
 }
@@ -27,12 +29,30 @@ func NewManager(ctx context.Context, cc *container.Container) *Manager {
 	return &Manager{
 		container: cc,
 		ctx:       ctx,
+		pauseJobs: make(map[string]bool),
 	}
+}
+
+// Paused return whether the named job has been paused
+func (jm *Manager) Paused(name string) bool {
+	jm.lock.RLock()
+	defer jm.lock.RUnlock()
+
+	paused, _ := jm.pauseJobs[name]
+	return paused
+}
+
+func (jm *Manager) Pause(name string, pause bool) {
+	jm.lock.Lock()
+	defer jm.lock.Unlock()
+
+	jm.pauseJobs[name] = pause
 }
 
 // Run 启动周期性任务循环
 func (jm *Manager) Run(name string, job Job, interval time.Duration) {
 	log.Debugf("Job %s running...", name)
+
 	jm.wg.Add(1)
 
 	go func() {
@@ -45,6 +65,10 @@ func (jm *Manager) Run(name string, job Job, interval time.Duration) {
 		for {
 			select {
 			case <-globalTicker.C:
+				if jm.Paused(name) {
+					continue
+				}
+
 				func() {
 					defer func() {
 						if err := recover(); err != nil {

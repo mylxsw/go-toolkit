@@ -20,3 +20,5 @@ require (
 	golang.org/x/tools v0.0.0-20190802220118-1d1727260058 // indirect
 	gopkg.in/ini.v1 v1.44.2
 )
+
+go 1.13
