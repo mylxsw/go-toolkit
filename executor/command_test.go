@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"sync"
 	"testing"
 )
@@ -28,7 +29,7 @@ func testCommandWithOutputChan(t *testing.T, executable string, args ...string) 
 		}
 	}(cmd.OpenOutputChan())
 
-	if _, err := cmd.Run(); err != nil {
+	if _, err := cmd.Run(context.TODO()); err != nil {
 		t.Errorf("command execute failed: %s", err.Error())
 	} else {
 		t.Log("test ok")
@@ -40,7 +41,7 @@ func testCommandWithOutputChan(t *testing.T, executable string, args ...string) 
 func testCommand(t *testing.T, executable string, args ...string) {
 	cmd := New(executable, args...)
 
-	if _, err := cmd.Run(); err != nil {
+	if _, err := cmd.Run(context.TODO()); err != nil {
 		t.Errorf("command %s execute failed: %s", executable, err.Error())
 	} else {
 		t.Log("test ok")

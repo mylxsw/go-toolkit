@@ -16,7 +16,7 @@ type Job interface {
 
 // Manager 周期性任务管理器
 type Manager struct {
-	container *container.Container
+	container container.Container
 	ctx       context.Context
 	pauseJobs map[string]bool
 	lock      sync.RWMutex
@@ -25,7 +25,7 @@ type Manager struct {
 }
 
 // NewManager 创建一个Manager
-func NewManager(ctx context.Context, cc *container.Container) *Manager {
+func NewManager(ctx context.Context, cc container.Container) *Manager {
 	return &Manager{
 		container: cc,
 		ctx:       ctx,

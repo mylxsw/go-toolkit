@@ -10,7 +10,7 @@ require (
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mylxsw/asteria v0.0.0-20190730075526-1867e6bc4dbe
 	github.com/mylxsw/coll v0.0.0-20190810120926-a7a6f0f4bae8
-	github.com/mylxsw/container v0.0.0-20190810122756-1fd99a90f7c6
+	github.com/mylxsw/container v0.0.0-20191208075953-c8ee6e3238cc
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
