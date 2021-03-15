@@ -84,6 +84,7 @@ func (proc *Process) Start() (err error) {
 		"--fpm-config",
 		proc.Meta.FpmConfigFile,
 		"--nodaemonize",
+		"--allow-to-run-as-root",
 	}
 	// look for php.ini file
 	if proc.Meta.PhpConfigFile == "" {
