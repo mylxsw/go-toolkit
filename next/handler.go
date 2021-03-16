@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mylxsw/asteria/log"
@@ -126,7 +127,13 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	code, err := h.handler.ServeHTTP(respWriter, r)
 	if err != nil {
-		log.Errorf("request failed, code=%d, err=%s", code, err.Error())
+		if code == 0 {
+			for _, line := range strings.Split(err.Error(), "\n") {
+				log.WithFields(log.Fields{"type": "app-stderr"}).Error(line)
+			}
+		} else {
+			log.Errorf("request failed, code=%d, err=%s", code, err.Error())
+		}
 	}
 
 	if code != 0 {
