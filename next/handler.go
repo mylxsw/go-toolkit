@@ -129,7 +129,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if code == 0 {
 			for _, line := range strings.Split(err.Error(), "\n") {
-				log.WithFields(log.Fields{"type": "app-stderr"}).Error(line)
+				log.WithFields(log.Fields{"log": strings.TrimPrefix(line, "PHP message: ")}).Info("php-log")
 			}
 		} else {
 			log.Errorf("request failed, code=%d, err=%s", code, err.Error())
