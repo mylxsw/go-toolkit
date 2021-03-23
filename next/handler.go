@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mylxsw/asteria/log"
@@ -27,14 +26,16 @@ func CreateHTTPHandler(config *Config) http.Handler {
 	}
 
 	return &HTTPHandler{
-		handler: handler,
-		config:  config,
+		handler:         handler,
+		config:          config,
+		errorLogHandler: config.ErrorLogHandler,
 	}
 }
 
 // RequestLogHandler request log handler func
 type RequestLogHandler func(rc *RequestContext)
 type ErrorResponseHandler func(w http.ResponseWriter, r *http.Request, code int, err error)
+type ErrorLogHandler func(err error)
 
 // Config config object for create a handler
 type Config struct {
@@ -45,13 +46,15 @@ type Config struct {
 	SoftwareVersion      string
 	RequestLogHandler    RequestLogHandler
 	ErrorResponseHandler ErrorResponseHandler
+	ErrorLogHandler      ErrorLogHandler
 	Rules                []Rule
 }
 
 // HTTPHandler http request handler wrapper
 type HTTPHandler struct {
-	handler Handler
-	config  *Config
+	handler         Handler
+	errorLogHandler ErrorLogHandler
+	config          *Config
 }
 
 // RequestContext request context information
@@ -127,10 +130,8 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	code, err := h.handler.ServeHTTP(respWriter, r)
 	if err != nil {
-		if code == 0 {
-			for _, line := range strings.Split(err.Error(), "\n") {
-				log.WithFields(log.Fields{"log": strings.TrimPrefix(line, "PHP message: ")}).Info("php-log")
-			}
+		if code == 0 && h.errorLogHandler != nil {
+			h.errorLogHandler(err)
 		} else {
 			log.Errorf("request failed, code=%d, err=%s", code, err.Error())
 		}
