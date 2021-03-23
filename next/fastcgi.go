@@ -35,9 +35,10 @@ import (
 
 // Handler is a middleware type that can handle requests as a FastCGI client.
 type Handler struct {
-	Rules   []Rule
-	Root    string
-	FileSys http.FileSystem
+	Rules              []Rule
+	Root               string
+	FileSys            http.FileSystem
+	OverrideHostHeader string
 
 	// These are sent to CGI scripts in env variables
 	SoftwareName    string
@@ -256,6 +257,11 @@ func (h Handler) buildEnv(r *http.Request, rule Rule, fpath string) (map[string]
 		requestScheme = "https"
 	}
 
+	hostHeader := r.Host
+	if h.OverrideHostHeader != "" {
+		hostHeader = h.OverrideHostHeader
+	}
+
 	// Some variables are unused but cleared explicitly to prevent
 	// the parent environment from interfering.
 	env = map[string]string{
@@ -280,7 +286,7 @@ func (h Handler) buildEnv(r *http.Request, rule Rule, fpath string) (map[string]
 		// Other variables
 		"DOCUMENT_ROOT":   rule.Root,
 		"DOCUMENT_URI":    docURI,
-		"HTTP_HOST":       r.Host, // added here, since not always part of headers
+		"HTTP_HOST":       hostHeader, // added here, since not always part of headers
 		"REQUEST_URI":     r.RequestURI,
 		"SCRIPT_FILENAME": scriptFilename,
 		"SCRIPT_NAME":     scriptName,

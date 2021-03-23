@@ -16,13 +16,14 @@ func CreateHTTPHandler(config *Config) http.Handler {
 	rootDir := filepath.Dir(config.EndpointFile)
 
 	handler := Handler{
-		Rules:           config.Rules,
-		Root:            rootDir,
-		FileSys:         http.Dir(rootDir),
-		SoftwareName:    config.SoftwareName,
-		SoftwareVersion: config.SoftwareVersion,
-		ServerName:      config.ServerIP,
-		ServerPort:      strconv.Itoa(config.ServerPort),
+		Rules:              config.Rules,
+		Root:               rootDir,
+		FileSys:            http.Dir(rootDir),
+		SoftwareName:       config.SoftwareName,
+		SoftwareVersion:    config.SoftwareVersion,
+		ServerName:         config.ServerIP,
+		ServerPort:         strconv.Itoa(config.ServerPort),
+		OverrideHostHeader: config.OverrideHostHeader,
 	}
 
 	return &HTTPHandler{
@@ -48,6 +49,7 @@ type Config struct {
 	ErrorResponseHandler ErrorResponseHandler
 	ErrorLogHandler      ErrorLogHandler
 	Rules                []Rule
+	OverrideHostHeader   string
 }
 
 // HTTPHandler http request handler wrapper
