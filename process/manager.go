@@ -12,11 +12,11 @@ type Manager struct {
 	programs          map[string]*Program
 	restartProcess    chan *Process
 	closeTimeout      time.Duration
-	processOutputFunc OutputFunc
+	processOutputFunc OutputHandler
 }
 
 // NewManager create a new process manager
-func NewManager(closeTimeout time.Duration, processOutputFunc OutputFunc) *Manager {
+func NewManager(closeTimeout time.Duration, processOutputFunc OutputHandler) *Manager {
 	return &Manager{
 		programs:          make(map[string]*Program),
 		closeTimeout:      closeTimeout,

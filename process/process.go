@@ -25,8 +25,8 @@ const (
 	LogTypeStdout = OutputType("stdout")
 )
 
-// OutputFunc process output handler
-type OutputFunc func(logType OutputType, line string, process *Process)
+// OutputHandler process output handler
+type OutputHandler func(logType OutputType, line string, process *Process)
 
 // Process is a program instance
 type Process struct {
@@ -42,7 +42,7 @@ type Process struct {
 	lastAliveTime    time.Duration
 	timer            *time.Timer
 	lock             sync.Mutex
-	logFunc          OutputFunc
+	outputHandler    OutputHandler
 	lastErrorMessage string // last error message
 }
 
@@ -134,8 +134,8 @@ func NewProcess(name string, command string, args []string, username string) *Pr
 }
 
 // setOutputFunc set a function to receive process output
-func (process *Process) setOutputFunc(f OutputFunc) *Process {
-	process.logFunc = f
+func (process *Process) setOutputFunc(f OutputHandler) *Process {
+	process.outputHandler = f
 
 	return process
 }
@@ -155,11 +155,13 @@ func (process *Process) start() <-chan *Process {
 
 		cmd := process.createCmd()
 
-		stdoutPipe, _ := cmd.StdoutPipe()
-		stderrPipe, _ := cmd.StderrPipe()
+		if process.outputHandler != nil {
+			stdoutPipe, _ := cmd.StdoutPipe()
+			stderrPipe, _ := cmd.StderrPipe()
 
-		go process.consoleLog(LogTypeStdout, &stdoutPipe)
-		go process.consoleLog(LogTypeStderr, &stderrPipe)
+			go process.consoleLog(LogTypeStdout, &stdoutPipe)
+			go process.consoleLog(LogTypeStderr, &stderrPipe)
+		}
 
 		if err := cmd.Start(); err != nil {
 			log.Errorf("process %s start failed: %s", process.name, err.Error())
@@ -246,8 +248,8 @@ func (process *Process) consoleLog(logType OutputType, input *io.ReadCloser) err
 			break
 		}
 
-		if process.logFunc != nil {
-			process.logFunc(logType, strings.Trim(line, "\n"), process)
+		if process.outputHandler != nil {
+			process.outputHandler(logType, strings.Trim(line, "\n"), process)
 		}
 	}
 

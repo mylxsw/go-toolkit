@@ -25,7 +25,7 @@ func NewProgram(name, command, username string, procNum int) *Program {
 	}
 }
 
-func (program *Program) initProcesses(outputFunc OutputFunc) *Program {
+func (program *Program) initProcesses(outputFunc OutputHandler) *Program {
 	snips := strings.Split(program.Command, " ")
 	command, args := snips[0], snips[1:]
 

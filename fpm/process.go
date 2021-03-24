@@ -1,11 +1,14 @@
 package fpm
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/mylxsw/go-toolkit/file"
@@ -18,6 +21,13 @@ type Process struct {
 	Meta Meta
 	cmd  *exec.Cmd
 }
+
+type LogType string
+
+const (
+	LogTypeStdout LogType = "stdout"
+	LogTypeStderr LogType = "stderr"
+)
 
 // Meta 进程运行配置信息
 type Meta struct {
@@ -36,6 +46,7 @@ type Meta struct {
 	MinSpareServers string // fpm最小空闲进程数数目
 	MaxSpareServers string // fpm最大空闲进程数目
 	SlowlogTimeout  string // fpm慢请求日志超时时间
+	OutputHandler   func(typ LogType, msg string)
 }
 
 // NewProcess creates a new process descriptor
@@ -99,6 +110,14 @@ func (proc *Process) Start() (err error) {
 	proc.cmd = &exec.Cmd{
 		Path: proc.Meta.FpmBin,
 		Args: args,
+	}
+
+	if proc.Meta.OutputHandler != nil {
+		stdoutPipe, _ := proc.cmd.StdoutPipe()
+		stderrPipe, _ := proc.cmd.StderrPipe()
+
+		go proc.consoleLog(LogTypeStdout, &stdoutPipe)
+		go proc.consoleLog(LogTypeStderr, &stderrPipe)
 	}
 
 	if err := proc.cmd.Start(); err != nil {
@@ -169,6 +188,23 @@ func (proc *Process) Kill() error {
 // Wait wait for process to exit
 func (proc *Process) Wait() (err error) {
 	return proc.cmd.Wait()
+}
+
+func (proc *Process) consoleLog(typ LogType, input *io.ReadCloser) error {
+	reader := bufio.NewReader(*input)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil || io.EOF == err {
+			if err != io.EOF {
+				return fmt.Errorf("process fpm output failed: %s", err.Error())
+			}
+			break
+		}
+
+		proc.Meta.OutputHandler(typ, strings.Trim(line, "\n"))
+	}
+
+	return nil
 }
 
 // CloseExistProcess close php-fpm process already exist for this project

@@ -30,12 +30,13 @@ type Config struct {
 	SocketFile    string // fpm socket file
 	FpmConfigFile string // fpm config file
 
-	PM              string // fpm进程管理方式
-	MaxChildren     string // fpm最大子进程数目
-	StartServers    string // fpm启动时进程数目
-	MinSpareServers string // fpm最小空闲进程数数目
-	MaxSpareServers string // fpm最大空闲进程数目
-	SlowlogTimeout  string // fpm慢请求日志超时时间
+	PM              string                        // fpm进程管理方式
+	MaxChildren     string                        // fpm最大子进程数目
+	StartServers    string                        // fpm启动时进程数目
+	MinSpareServers string                        // fpm最小空闲进程数数目
+	MaxSpareServers string                        // fpm最大空闲进程数目
+	SlowlogTimeout  string                        // fpm慢请求日志超时时间
+	OutputHandler   func(typ LogType, msg string) // php-fpm 标准输出，标准错误输出处理器
 }
 
 // NewFpm 创建一个PFM实例
@@ -82,6 +83,7 @@ func NewFpm(config *Config) *Fpm {
 		MinSpareServers: config.MinSpareServers,
 		MaxSpareServers: config.MaxSpareServers,
 		SlowlogTimeout:  config.SlowlogTimeout,
+		OutputHandler:   config.OutputHandler,
 	})
 
 	// 更新/创建配置文件
@@ -104,7 +106,7 @@ func (fpm *Fpm) start() error {
 	err := fpm.process.Start()
 	fpm.started = true
 	if err != nil {
-		return fmt.Errorf("The php-fpm process start failed: %s", err.Error())
+		return fmt.Errorf("php-fpm process start failed: %s", err.Error())
 	}
 
 	return nil
@@ -116,12 +118,12 @@ func (fpm *Fpm) Loop(ok chan struct{}) error {
 		return err
 	}
 
-	log.Debugf("The master process for php-fpm has started with pid=%d", fpm.process.PID())
+	log.Debugf("master process for php-fpm has started with pid=%d", fpm.process.PID())
 	ok <- struct{}{}
 
 	for {
 		if err := fpm.process.Wait(); err != nil {
-			log.Errorf("The php-fpm process has stopped: %v", err)
+			log.Errorf("php-fpm process has stopped: %v", err)
 		}
 
 		// 如果进程未启动（已经手动关闭），则退出循环
@@ -136,11 +138,11 @@ func (fpm *Fpm) Loop(ok chan struct{}) error {
 
 		// 进程启动状态下，异常退出后重启进程
 		if err := fpm.start(); err != nil {
-			log.Errorf("The php-fpm process start failed: %v", err)
+			log.Errorf("php-fpm process start failed: %v", err)
 			continue
 		}
 
-		log.Debugf("The master process for php-fpm has restarted with pid=%d", fpm.process.PID())
+		log.Debugf("master process for php-fpm has restarted with pid=%d", fpm.process.PID())
 	}
 
 	return nil
@@ -148,7 +150,7 @@ func (fpm *Fpm) Loop(ok chan struct{}) error {
 
 // Reload reload php-fpm process
 func (fpm *Fpm) Reload() error {
-	log.Debug("Reload php-fpm process")
+	log.Debug("reload php-fpm process")
 	return fpm.process.Reload()
 }
 
@@ -159,13 +161,13 @@ func (fpm *Fpm) Kill() error {
 
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("Kill fpm process failed: %v", err)
+			log.Errorf("kill fpm process failed: %v", err)
 		}
 	}()
 
 	err := fpm.process.Kill()
 	if err != nil {
-		log.Warningf("Kill fpm process failed: %s", err.Error())
+		log.Warningf("kill fpm process failed: %s", err.Error())
 		return err
 	}
 
